@@ -1,8 +1,8 @@
 package com.licenta.supp_rel.auth;
 
-import com.licenta.supp_rel.entities.Role;
-import com.licenta.supp_rel.entities.User;
-import com.licenta.supp_rel.repositories.UserRepository;
+import com.licenta.supp_rel.user.Role;
+import com.licenta.supp_rel.user.User;
+import com.licenta.supp_rel.user.UserRepository;
 import com.licenta.supp_rel.security.JwtService;
 import com.licenta.supp_rel.token.Token;
 import com.licenta.supp_rel.token.TokenRepository;

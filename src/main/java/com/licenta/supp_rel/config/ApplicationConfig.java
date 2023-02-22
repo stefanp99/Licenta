@@ -1,6 +1,6 @@
 package com.licenta.supp_rel.config;
 
-import com.licenta.supp_rel.repositories.UserRepository;
+import com.licenta.supp_rel.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,6 +1,6 @@
 package com.licenta.supp_rel.token;
 
-import com.licenta.supp_rel.entities.User;
+import com.licenta.supp_rel.user.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

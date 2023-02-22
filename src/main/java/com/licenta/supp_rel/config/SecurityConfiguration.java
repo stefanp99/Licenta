@@ -20,7 +20,7 @@ public class SecurityConfiguration {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
     private final LogoutHandler logoutHandler;
-    
+
     @Bean
     CorsFilter corsFilter() {
         return new CorsFilter();
@@ -32,6 +32,8 @@ public class SecurityConfiguration {
                 .disable()
                 .authorizeHttpRequests()
                 .requestMatchers("/auth/**")
+                .permitAll()
+                .requestMatchers("/users/**")
                 .permitAll()
                 .anyRequest()
                 .authenticated()

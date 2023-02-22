@@ -1,6 +1,5 @@
-package com.licenta.supp_rel.entities;
+package com.licenta.supp_rel.user;
 
-import com.licenta.supp_rel.token.Token;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,8 +30,8 @@ public class User implements UserDetails {
     private String password;
     @Enumerated(EnumType.STRING)
     private Role role;
-    @OneToMany(mappedBy = "user")
-    private List<Token> tokens;
+//    @OneToMany(mappedBy = "user")
+//    private List<Token> tokens;
 
     @Override
     public boolean isAccountNonExpired() {
