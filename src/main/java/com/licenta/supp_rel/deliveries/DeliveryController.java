@@ -2,7 +2,6 @@ package com.licenta.supp_rel.deliveries;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Timestamp;
@@ -21,8 +20,8 @@ public class DeliveryController {
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
     @GetMapping("deliveries-by-date")
-    public List<Delivery> getAllDeliveriesByDate(@DefaultValue("yyyy-mm-dd") @RequestParam("date") String date){
-        if(date.equals("yyyy-mm-dd")) {
+    public List<Delivery> getAllDeliveriesByDate(@RequestParam(value = "date", required = false) String date){
+        if(date == null) {
             date = dateFormat.format(new Date());
         }
         try {
