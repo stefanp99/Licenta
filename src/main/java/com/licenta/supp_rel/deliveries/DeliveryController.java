@@ -1,5 +1,6 @@
 package com.licenta.supp_rel.deliveries;
 
+import com.licenta.supp_rel.contracts.ContractRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,8 @@ public class DeliveryController {
     private final DeliveryService deliveryService;
     @Autowired
     private DeliveryRepository deliveryRepository;
+    @Autowired
+    private ContractRepository contractRepository;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
     @GetMapping("deliveries-by-date")
@@ -32,15 +35,13 @@ public class DeliveryController {
     }
 
     @PostMapping("add-delivery")
-        public Delivery addDelivery(@RequestParam("materialCode") String materialCode, @RequestParam("plantId") String plantId,
-                                @RequestParam("supplierId") String supplierId, @RequestParam("pricePerUnit") Float pricePerUnit,
-                                @RequestParam("quantity") Long quantity){
+        public Delivery addDelivery(@RequestParam("expectedQuantity") Long expectedQuantity,
+                                    @RequestParam("expectedDeliveryDate") Timestamp expectedDeliveryDate,
+                                    @RequestParam("contractId") Integer contractId){
         Delivery delivery = new Delivery();
-        delivery.setMaterialCode(materialCode);
-        delivery.setPlantId(plantId);
-        delivery.setSupplierId(supplierId);
-        delivery.setPricePerUnit(pricePerUnit);
-        delivery.setQuantity(quantity);
+        delivery.setExpectedQuantity(expectedQuantity);
+        delivery.setExpectedDeliveryDate(expectedDeliveryDate);
+        delivery.setContract(contractRepository.findById(contractId).orElse(null));
         delivery.setStatus(DeliveryStatus.undispatched);
         deliveryRepository.save(delivery);
         return delivery;
@@ -48,25 +49,11 @@ public class DeliveryController {
 
     @PutMapping("dispatch-delivery")
     public Delivery dispatchDelivery(@RequestParam("id") Integer id){
-        Delivery delivery = deliveryRepository.findById(id).orElse(null);
-        if(delivery != null){
-            delivery.setDispatchDate(new Timestamp(System.currentTimeMillis()));
-            delivery.setStatus(DeliveryStatus.dispatched);
-            deliveryRepository.save(delivery);
-            return delivery;
-        }
-        return null;
+        return deliveryService.dispatchDelivery(id);
     }
 
     @PutMapping("deliver-delivery")
-    public Delivery deliverDelivery(@RequestParam("id") Integer id){
-        Delivery delivery = deliveryRepository.findById(id).orElse(null);
-        if(delivery != null){
-            delivery.setDeliveryDate(new Timestamp(System.currentTimeMillis()));
-            delivery.setStatus(DeliveryStatus.delivered);
-            deliveryRepository.save(delivery);
-            return delivery;
-        }
-        return null;
+    public Delivery deliverDelivery(@RequestParam("id") Integer id, @RequestParam("realQuantity") Long realQuantity){
+        return deliveryService.deliverDelivery(id, realQuantity);
     }
 }

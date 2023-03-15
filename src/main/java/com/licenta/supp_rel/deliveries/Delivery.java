@@ -1,5 +1,6 @@
 package com.licenta.supp_rel.deliveries;
 
+import com.licenta.supp_rel.contracts.Contract;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,14 +19,13 @@ public class Delivery {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-
-    private String materialCode;
-    private String plantId;
-    private String supplierId;
-    private Float pricePerUnit;
-    private Long quantity;
+    private Long expectedQuantity;
     @Enumerated(EnumType.STRING)
     private DeliveryStatus status;
     private Timestamp dispatchDate;
     private Timestamp deliveryDate;
+    @ManyToOne
+    @JoinColumn(name = "contract_id")
+    private Contract contract;
+    private Timestamp expectedDeliveryDate;
 }
