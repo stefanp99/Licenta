@@ -22,6 +22,6 @@ public class Deviation {
     @ManyToOne
     @JoinColumn(name = "delivery_id")
     private Delivery delivery;
-    private Long quantityDiff;
+    private Float quantityDiff;
     private Long timeDiff;
 }

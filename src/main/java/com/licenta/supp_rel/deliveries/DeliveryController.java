@@ -3,6 +3,7 @@ package com.licenta.supp_rel.deliveries;
 import com.licenta.supp_rel.contracts.ContractRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Timestamp;
@@ -53,7 +54,7 @@ public class DeliveryController {
     }
 
     @PutMapping("deliver-delivery")
-    public Delivery deliverDelivery(@RequestParam("id") Integer id, @RequestParam("realQuantity") Long realQuantity){
-        return deliveryService.deliverDelivery(id, realQuantity);
+    public ResponseEntity<DeliveryResponse> deliverDelivery(@RequestParam("id") Integer id, @RequestParam("realQuantity") Long realQuantity){
+        return ResponseEntity.ok(deliveryService.deliverDelivery(id, realQuantity));
     }
 }

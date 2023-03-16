@@ -20,11 +20,13 @@ public class DeviationService {
                 deviation.setType(DeviationTypes.qtyMinus);
             else
                 deviation.setType(DeviationTypes.qtyPlus);
-            deviation.setQuantityDiff(Math.abs(realQuantity - delivery.getExpectedQuantity()));
+            deviation.setQuantityDiff((float) Math.abs(realQuantity - delivery.getExpectedQuantity()) * 100 / delivery.getExpectedQuantity());
             deviation.setTimeDiff(Math.abs(delivery.getExpectedDeliveryDate().getTime() - delivery.getDeliveryDate().getTime()) / (24 * 60 * 60 * 1000));
-            deviation.setDelivery(delivery);//add check to see if the deviations does not already exist
-            deviationRepository.save(deviation);
-            deviations.add(deviation);
+            deviation.setDelivery(delivery);
+            if (!deviationExists(deviation)) {
+                deviationRepository.save(deviation);
+                deviations.add(deviation);
+            }
         }
         if (!(Math.abs(delivery.getExpectedDeliveryDate().getTime() - delivery.getDeliveryDate().getTime()) <= 24 * 60 * 60 * 1000)) {//TODO: add tolerances here
             Deviation deviation = new Deviation();
@@ -32,12 +34,20 @@ public class DeviationService {
                 deviation.setType(DeviationTypes.dayPlus);
             else
                 deviation.setType(DeviationTypes.dayMinus);
-            deviation.setQuantityDiff(Math.abs(realQuantity - delivery.getExpectedQuantity()));
+            deviation.setQuantityDiff((float) Math.abs(realQuantity - delivery.getExpectedQuantity()) * 100 / delivery.getExpectedQuantity());
             deviation.setTimeDiff(Math.abs(delivery.getExpectedDeliveryDate().getTime() - delivery.getDeliveryDate().getTime()) / (24 * 60 * 60 * 1000));
             deviation.setDelivery(delivery);
-            deviationRepository.save(deviation);
-            deviations.add(deviation);
+            if (!deviationExists(deviation)) {
+                deviationRepository.save(deviation);
+                deviations.add(deviation);
+            }
         }
         return deviations;
+    }
+
+    private boolean deviationExists(Deviation deviation) {//TODO: fix this - find method not working
+        List<Deviation> matchingDeviations = deviationRepository.findByTypeAndDeliveryAndQuantityDiffAndTimeDiff(deviation.getType(), deviation.getDelivery(),
+                deviation.getQuantityDiff(), deviation.getTimeDiff());
+        return matchingDeviations.size() > 0;
     }
 }

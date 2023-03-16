@@ -41,14 +41,16 @@ public class DeliveryService {
         return null;
     }
 
-    public Delivery deliverDelivery(Integer id, Long realQuantity){
+    public DeliveryResponse deliverDelivery(Integer id, Long realQuantity){
+        DeliveryResponse deliveryResponse = new DeliveryResponse();
         Delivery delivery = deliveryRepository.findById(id).orElse(null);
         if(delivery != null){
             delivery.setDeliveryDate(new Timestamp(System.currentTimeMillis()));
             delivery.setStatus(DeliveryStatus.delivered);
             deliveryRepository.save(delivery);
-            deviationService.checkDeviations(delivery, realQuantity);
-            return delivery;
+            deliveryResponse.setDelivery(delivery);
+            deliveryResponse.setDeviations(deviationService.checkDeviations(delivery, realQuantity));
+            return deliveryResponse;
         }
         return null;
     }
