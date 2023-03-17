@@ -24,12 +24,56 @@ public class ToleranceService {
         for (Tolerance tolerance : allTolerances) {
             // Check if the tolerance matches any of the specified plantIds, supplierIds, and materialCodes
             if ((plantIds.contains(tolerance.getPlantId()) || plantIds.contains("*") || tolerance.getPlantId().equals("%")) &&
-                    (supplierIds.contains(tolerance.getSupplierId()) || supplierIds.contains("*")) &&
-                    (materialCodes.contains(tolerance.getMaterialCode()) || materialCodes.contains("*"))) {
+                    (supplierIds.contains(tolerance.getSupplier().getId()) || supplierIds.contains("*")) &&
+                    (materialCodes.contains(tolerance.getMaterialCode()) || materialCodes.contains("*") || tolerance.getMaterialCode().equals("%"))) {
                 // Add the matching tolerance to the list
                 matchingTolerances.add(tolerance);
             }
         }
         return matchingTolerances;
+    }
+
+    public Float getUpperQtyToleranceByPlantIdSupplierIdMaterialCode(String plantIdInput,
+                                                                String supplierIdInput,
+                                                                String materialCodeInput){
+        List<Tolerance> tolerances = findTolerancesByPlantIdSupplierIdMaterialCode(plantIdInput, supplierIdInput, materialCodeInput);
+        Float upperMaxTolerance = 0f;//calculate biggest tolerance
+        for(Tolerance tolerance: tolerances)
+            if(tolerance.getQtyUpperLimit()>upperMaxTolerance)
+                upperMaxTolerance = tolerance.getQtyUpperLimit();
+        return upperMaxTolerance;
+    }
+
+    public Float getLowerQtyToleranceByPlantIdSupplierIdMaterialCode(String plantIdInput,
+                                                                     String supplierIdInput,
+                                                                     String materialCodeInput){
+        List<Tolerance> tolerances = findTolerancesByPlantIdSupplierIdMaterialCode(plantIdInput, supplierIdInput, materialCodeInput);
+        Float lowerMaxTolerance = 0f;//calculate biggest tolerance
+        for(Tolerance tolerance: tolerances)
+            if(tolerance.getQtyLowerLimit()>lowerMaxTolerance)
+                lowerMaxTolerance = tolerance.getQtyLowerLimit();
+        return lowerMaxTolerance;
+    }
+
+    public Integer getUpperDayToleranceByPlantIdSupplierIdMaterialCode(String plantIdInput,
+                                                                     String supplierIdInput,
+                                                                     String materialCodeInput){
+        List<Tolerance> tolerances = findTolerancesByPlantIdSupplierIdMaterialCode(plantIdInput, supplierIdInput, materialCodeInput);
+        Integer upperMaxTolerance = 0;//calculate biggest tolerance
+        for(Tolerance tolerance: tolerances)
+            if(tolerance.getDayUpperLimit()>upperMaxTolerance)
+                upperMaxTolerance = tolerance.getDayUpperLimit();
+        return upperMaxTolerance;
+    }
+
+    public Integer getLowerDayToleranceByPlantIdSupplierIdMaterialCode(String plantIdInput,
+                                                                     String supplierIdInput,
+                                                                     String materialCodeInput){
+        List<Tolerance> tolerances = findTolerancesByPlantIdSupplierIdMaterialCode(plantIdInput, supplierIdInput, materialCodeInput);
+        Integer lowerMaxTolerance = 0;//calculate biggest tolerance
+        for(Tolerance tolerance: tolerances)
+            if(tolerance.getDayLowerLimit()>lowerMaxTolerance)
+                lowerMaxTolerance = tolerance.getDayLowerLimit();
+        return lowerMaxTolerance;
     }
 }

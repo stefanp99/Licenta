@@ -25,13 +25,23 @@ public class DeliveryController {
 
     @GetMapping("deliveries-by-date")
     public List<Delivery> getAllDeliveriesByDate(@RequestParam(value = "date", required = false) String date){
-        if(date == null) {
+        if(date == null || date.equals("")) {
             date = dateFormat.format(new Date());
         }
         try {
             return deliveryService.findDeliveriesByDate(dateFormat.parse(date));
         } catch (ParseException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @GetMapping("deliveries-by-status")
+    public List<Delivery> getAllDeliveriesByStatus(@RequestParam(value = "status", required = false) String status){
+        try {
+            return deliveryRepository.findByStatus(DeliveryStatus.valueOf(status));
+        }
+        catch (IllegalArgumentException e){
+            return deliveryRepository.findAll();
         }
     }
 

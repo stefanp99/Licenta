@@ -1,6 +1,7 @@
 package com.licenta.supp_rel.deviations;
 
 import com.licenta.supp_rel.deliveries.Delivery;
+import com.licenta.supp_rel.tolerances.ToleranceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,9 +13,13 @@ public class DeviationService {
     @Autowired
     DeviationRepository deviationRepository;
 
+    @Autowired
+    private ToleranceService toleranceService;
+
     public List<Deviation> checkDeviations(Delivery delivery, Long realQuantity) {
         List<Deviation> deviations = new ArrayList<>();
-        if (!realQuantity.equals(delivery.getExpectedQuantity())) {//TODO: add tolerances here
+        //qty check
+        if (isQtyDeviation(delivery, realQuantity)) {
             Deviation deviation = new Deviation();
             if (realQuantity < delivery.getExpectedQuantity())
                 deviation.setType(DeviationTypes.qtyMinus);
@@ -28,7 +33,8 @@ public class DeviationService {
                 deviations.add(deviation);
             }
         }
-        if (!(Math.abs(delivery.getExpectedDeliveryDate().getTime() - delivery.getDeliveryDate().getTime()) <= 24 * 60 * 60 * 1000)) {//TODO: add tolerances here
+        //day check
+        if (isDayDeviation(delivery)) {
             Deviation deviation = new Deviation();
             if (delivery.getExpectedDeliveryDate().before(delivery.getDeliveryDate()))
                 deviation.setType(DeviationTypes.dayPlus);
@@ -45,9 +51,61 @@ public class DeviationService {
         return deviations;
     }
 
-    private boolean deviationExists(Deviation deviation) {//TODO: fix this - find method not working
-        List<Deviation> matchingDeviations = deviationRepository.findByTypeAndDeliveryAndQuantityDiffAndTimeDiff(deviation.getType(), deviation.getDelivery(),
-                deviation.getQuantityDiff(), deviation.getTimeDiff());
-        return matchingDeviations.size() > 0;
+    private boolean deviationExists(Deviation deviation) {
+        List<Deviation> allDeviations = deviationRepository.findAll();
+        for (Deviation existingDeviation : allDeviations)
+            if (deviation.getDelivery().getId().equals(existingDeviation.getDelivery().getId()) &&
+                    deviation.getType().equals(existingDeviation.getType()) &&
+                    deviation.getQuantityDiff().intValue() == existingDeviation.getQuantityDiff().intValue() &&
+                    deviation.getTimeDiff().equals(existingDeviation.getTimeDiff()))
+                return true;
+        return false;
+    }
+
+    boolean isQtyDeviation(Delivery delivery, Long realQuantity){
+        long upperLimit = (long) (delivery.getExpectedQuantity() + delivery.getExpectedQuantity()*
+                        toleranceService
+                                .getUpperQtyToleranceByPlantIdSupplierIdMaterialCode(
+                                        delivery.getContract().getPlantId(),
+                                        delivery.getContract().getSupplierId(),
+                                        delivery.getContract().getMaterialCode())/100);
+        long lowerLimit = (long) (delivery.getExpectedQuantity() - delivery.getExpectedQuantity()*
+                toleranceService
+                        .getLowerQtyToleranceByPlantIdSupplierIdMaterialCode(
+                                delivery.getContract().getPlantId(),
+                                delivery.getContract().getSupplierId(),
+                                delivery.getContract().getMaterialCode())/100);
+
+        System.out.println("real qty:" + realQuantity);
+        System.out.println("upper limit qty: " + upperLimit);
+        System.out.println("lower limit qty: " + lowerLimit);
+        System.out.println("is qty devi: " + (realQuantity < lowerLimit || realQuantity > upperLimit));
+        return realQuantity < lowerLimit || realQuantity > upperLimit;
+    }
+
+    private boolean isDayDeviation(Delivery delivery) {
+        long realDeliveryDays;
+        if (delivery.getDeliveryDate().before(delivery.getExpectedDeliveryDate()))
+            realDeliveryDays = -Math.abs(delivery.getDeliveryDate().getTime() - delivery.getExpectedDeliveryDate().getTime())
+                    / (24 * 60 * 60 * 1000);
+        else
+            realDeliveryDays = Math.abs(delivery.getDeliveryDate().getTime() - delivery.getExpectedDeliveryDate().getTime())
+                    / (24 * 60 * 60 * 1000);
+        long upperLimit = toleranceService
+                .getUpperDayToleranceByPlantIdSupplierIdMaterialCode(
+                        delivery.getContract().getPlantId(),
+                        delivery.getContract().getSupplierId(),
+                        delivery.getContract().getMaterialCode());
+        long lowerLimit = -toleranceService
+                .getLowerDayToleranceByPlantIdSupplierIdMaterialCode(
+                        delivery.getContract().getPlantId(),
+                        delivery.getContract().getSupplierId(),
+                        delivery.getContract().getMaterialCode());
+
+        System.out.println("real day:" + realDeliveryDays);
+        System.out.println("upper limit day: " + upperLimit);
+        System.out.println("lower limit day: " + lowerLimit);
+        System.out.println("is day devi: " + (realDeliveryDays < lowerLimit || realDeliveryDays > upperLimit));
+        return realDeliveryDays < lowerLimit || realDeliveryDays > upperLimit;
     }
 }
