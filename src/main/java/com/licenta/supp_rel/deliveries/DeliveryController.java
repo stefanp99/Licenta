@@ -47,11 +47,13 @@ public class DeliveryController {
 
     @PostMapping("add-delivery")
         public Delivery addDelivery(@RequestParam("expectedQuantity") Long expectedQuantity,
-                                    @RequestParam("expectedDeliveryDate") Timestamp expectedDeliveryDate,
-                                    @RequestParam("contractId") Integer contractId){
+                                    @RequestParam("expectedDeliveryDate") String expectedDeliveryDate,
+                                    @RequestParam("contractId") Integer contractId) throws ParseException {
+        Date parsedDate = dateFormat.parse(expectedDeliveryDate);
+        Timestamp timestampExpectedDeliveryDate = new Timestamp(parsedDate.getTime());
         Delivery delivery = new Delivery();
         delivery.setExpectedQuantity(expectedQuantity);
-        delivery.setExpectedDeliveryDate(expectedDeliveryDate);
+        delivery.setExpectedDeliveryDate(timestampExpectedDeliveryDate);
         delivery.setContract(contractRepository.findById(contractId).orElse(null));
         delivery.setStatus(DeliveryStatus.undispatched);
         deliveryRepository.save(delivery);
