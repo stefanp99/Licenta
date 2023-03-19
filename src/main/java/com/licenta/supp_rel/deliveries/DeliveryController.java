@@ -49,7 +49,8 @@ public class DeliveryController {
         public Delivery addDelivery(@RequestParam("expectedQuantity") Long expectedQuantity,
                                     @RequestParam("expectedDeliveryDate") String expectedDeliveryDate,
                                     @RequestParam("contractId") Integer contractId) throws ParseException {
-        Date parsedDate = dateFormat.parse(expectedDeliveryDate);
+        SimpleDateFormat timestampDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm");
+        Date parsedDate = timestampDateFormat.parse(expectedDeliveryDate);
         Timestamp timestampExpectedDeliveryDate = new Timestamp(parsedDate.getTime());
         Delivery delivery = new Delivery();
         delivery.setExpectedQuantity(expectedQuantity);

@@ -46,6 +46,8 @@ public class SecurityConfiguration {
                 .permitAll()
                 .requestMatchers("/tolerances/**")
                 .permitAll()
+                .requestMatchers("/contracts/**")
+                .permitAll()
                 .anyRequest()
                 .authenticated()
                 .and()
