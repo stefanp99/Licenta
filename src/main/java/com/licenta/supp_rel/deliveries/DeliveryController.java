@@ -40,7 +40,7 @@ public class DeliveryController {
         try {
             return deliveryRepository.findByStatus(DeliveryStatus.valueOf(status));
         }
-        catch (IllegalArgumentException e){
+        catch (IllegalArgumentException | NullPointerException e){
             return deliveryRepository.findAll();
         }
     }

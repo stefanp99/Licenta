@@ -1,28 +1,33 @@
 package com.licenta.supp_rel.deviations;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.context.properties.bind.DefaultValue;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = "deviations")
 @RequiredArgsConstructor
 public class DeviationController {
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-
-    @PostMapping("calculate-deviations")
-    public ResponseEntity<DeviationResponse> calculateDeviations(@DefaultValue("yyyy-mm-dd") @RequestParam("day") String day){
-        if(day.equals("yyyy-mm-dd")) {
-            day = dateFormat.format(new Date());
+    @Autowired
+    DeviationRepository deviationRepository;
+    @GetMapping("by-type")
+    public List<Deviation> getDeviationByType(@RequestParam(value = "type", required = false) String type){
+        try{
+            List<String> types = new ArrayList<>(Arrays.asList(type.split(",")));
+            List<Deviation> returnedDeviations = new ArrayList<>();
+            for(String t: types)
+                returnedDeviations.addAll(deviationRepository.findByType(DeviationTypes.valueOf(t)));
+            return returnedDeviations;
         }
-        return null;
+        catch (IllegalArgumentException | NullPointerException e) {
+            return deviationRepository.findAll();
+        }
     }
-
 }
