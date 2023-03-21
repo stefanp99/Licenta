@@ -1,6 +1,8 @@
 package com.licenta.supp_rel.contracts;
 
 
+import com.licenta.supp_rel.plants.Plant;
+import com.licenta.supp_rel.suppliers.Supplier;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,9 +20,13 @@ public class Contract {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    private String supplierId;
+    @ManyToOne
+    @JoinColumn(name = "supplier_id")
+    private Supplier supplier;
     private String materialCode;
     private Float pricePerUnit;
-    private String plantId;
+    @ManyToOne
+    @JoinColumn(name = "plant_id")
+    private Plant plant;
 
 }

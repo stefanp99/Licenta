@@ -66,14 +66,14 @@ public class DeviationService {
         long upperLimit = (long) (delivery.getExpectedQuantity() + delivery.getExpectedQuantity()*
                         toleranceService
                                 .getUpperQtyToleranceByPlantIdSupplierIdMaterialCode(
-                                        delivery.getContract().getPlantId(),
-                                        delivery.getContract().getSupplierId(),
+                                        delivery.getContract().getPlant().getId(),
+                                        delivery.getContract().getSupplier().getId(),
                                         delivery.getContract().getMaterialCode())/100);
         long lowerLimit = (long) (delivery.getExpectedQuantity() - delivery.getExpectedQuantity()*
                 toleranceService
                         .getLowerQtyToleranceByPlantIdSupplierIdMaterialCode(
-                                delivery.getContract().getPlantId(),
-                                delivery.getContract().getSupplierId(),
+                                delivery.getContract().getPlant().getId(),
+                                delivery.getContract().getSupplier().getId(),
                                 delivery.getContract().getMaterialCode())/100);
 
         System.out.println("real qty:" + realQuantity);
@@ -93,13 +93,13 @@ public class DeviationService {
                     / (24 * 60 * 60 * 1000);
         long upperLimit = toleranceService
                 .getUpperDayToleranceByPlantIdSupplierIdMaterialCode(
-                        delivery.getContract().getPlantId(),
-                        delivery.getContract().getSupplierId(),
+                        delivery.getContract().getPlant().getId(),
+                        delivery.getContract().getSupplier().getId(),
                         delivery.getContract().getMaterialCode());
         long lowerLimit = -toleranceService
                 .getLowerDayToleranceByPlantIdSupplierIdMaterialCode(
-                        delivery.getContract().getPlantId(),
-                        delivery.getContract().getSupplierId(),
+                        delivery.getContract().getPlant().getId(),
+                        delivery.getContract().getSupplier().getId(),
                         delivery.getContract().getMaterialCode());
 
         System.out.println("real day:" + realDeliveryDays);
