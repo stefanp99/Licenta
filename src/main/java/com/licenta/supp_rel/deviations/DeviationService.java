@@ -5,6 +5,7 @@ import com.licenta.supp_rel.tolerances.ToleranceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +29,7 @@ public class DeviationService {
             deviation.setQuantityDiff((float) Math.abs(realQuantity - delivery.getExpectedQuantity()) * 100 / delivery.getExpectedQuantity());
             deviation.setTimeDiff(Math.abs(delivery.getExpectedDeliveryDate().getTime() - delivery.getDeliveryDate().getTime()) / (24 * 60 * 60 * 1000));
             deviation.setDelivery(delivery);
+            deviation.setCreationDate(new Timestamp(System.currentTimeMillis()));
             if (!deviationExists(deviation)) {
                 deviationRepository.save(deviation);
                 deviations.add(deviation);
@@ -43,6 +45,7 @@ public class DeviationService {
             deviation.setQuantityDiff((float) Math.abs(realQuantity - delivery.getExpectedQuantity()) * 100 / delivery.getExpectedQuantity());
             deviation.setTimeDiff(Math.abs(delivery.getExpectedDeliveryDate().getTime() - delivery.getDeliveryDate().getTime()) / (24 * 60 * 60 * 1000));
             deviation.setDelivery(delivery);
+            deviation.setCreationDate(new Timestamp(System.currentTimeMillis()));
             if (!deviationExists(deviation)) {
                 deviationRepository.save(deviation);
                 deviations.add(deviation);

@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.sql.Timestamp;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -24,4 +26,5 @@ public class Deviation {
     private Delivery delivery;
     private Float quantityDiff;
     private Long timeDiff;
+    private Timestamp creationDate;
 }
