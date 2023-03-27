@@ -28,4 +28,5 @@ public class Delivery {
     @JoinColumn(name = "contract_id")
     private Contract contract;
     private Timestamp expectedDeliveryDate;
+    private Long realQuantity;
 }

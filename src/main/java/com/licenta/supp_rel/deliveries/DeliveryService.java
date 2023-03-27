@@ -1,7 +1,11 @@
 package com.licenta.supp_rel.deliveries;
 
+import com.licenta.supp_rel.contracts.Contract;
+import com.licenta.supp_rel.contracts.ContractRepository;
 import com.licenta.supp_rel.deviations.DeviationRepository;
 import com.licenta.supp_rel.deviations.DeviationService;
+import com.licenta.supp_rel.suppliers.Supplier;
+import com.licenta.supp_rel.suppliers.SupplierRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,20 +23,25 @@ public class DeliveryService {
     DeliveryRepository deliveryRepository;
     @Autowired
     DeviationRepository deviationRepository;
+    @Autowired
+    ContractRepository contractRepository;
+    @Autowired
+    SupplierRepository supplierRepository;
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    public List<Delivery> findDeliveriesByDate(Date date){
+
+    public List<Delivery> findDeliveriesByDate(Date date) {
         List<Delivery> deliveries = deliveryRepository.findByStatus(DeliveryStatus.delivered);
         List<Delivery> deliveriesFromDay = new ArrayList<>();
-        for(Delivery delivery: deliveries)
+        for (Delivery delivery : deliveries)
             if (dateFormat.format(delivery.getDeliveryDate().getTime()).equals(dateFormat.format(date)))
                 deliveriesFromDay.add(delivery);
         return deliveriesFromDay;
     }
 
-    public Delivery dispatchDelivery(Integer id){
+    public Delivery dispatchDelivery(Integer id) {
         Delivery delivery = deliveryRepository.findById(id).orElse(null);
-        if(delivery != null){
+        if (delivery != null) {
             delivery.setDispatchDate(new Timestamp(System.currentTimeMillis()));
             delivery.setStatus(DeliveryStatus.dispatched);
             deliveryRepository.save(delivery);
@@ -41,17 +50,33 @@ public class DeliveryService {
         return null;
     }
 
-    public DeliveryResponse deliverDelivery(Integer id, Long realQuantity){
+    public DeliveryResponse deliverDelivery(Integer id, Long realQuantity) {
         DeliveryResponse deliveryResponse = new DeliveryResponse();
         Delivery delivery = deliveryRepository.findById(id).orElse(null);
-        if(delivery != null){
+        if (delivery != null) {
             delivery.setDeliveryDate(new Timestamp(System.currentTimeMillis()));
             delivery.setStatus(DeliveryStatus.delivered);
+            delivery.setRealQuantity(realQuantity);
             deliveryRepository.save(delivery);
             deliveryResponse.setDelivery(delivery);
             deliveryResponse.setDeviations(deviationService.checkDeviations(delivery, realQuantity));
             return deliveryResponse;
         }
         return null;
+    }
+
+    public List<Delivery> findAllBySupplierIdAndMaterialCode(Supplier supplier, String materialCode) {
+        List<Contract> contracts;
+        if(!(materialCode == null) && !materialCode.isEmpty())
+            contracts = contractRepository.findAllBySupplierAndMaterialCode(supplier, materialCode);
+        else
+            contracts = contractRepository.findAllBySupplier(supplier);
+        List<Delivery> deliveries = new ArrayList<>();
+        for (Contract contract : contracts) {
+            List<Delivery> deliveriesFound = deliveryRepository.findByContract(contract);
+            if (!deliveriesFound.isEmpty())
+                deliveries.addAll(deliveriesFound);
+        }
+        return deliveries;
     }
 }
