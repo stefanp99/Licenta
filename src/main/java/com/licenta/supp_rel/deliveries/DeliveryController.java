@@ -35,6 +35,11 @@ public class DeliveryController {
         }
     }
 
+    @GetMapping("deliveries-by-id")
+    public Delivery getDeliveryById(@RequestParam("id") Integer id){
+        return deliveryRepository.findById(id).orElse(null);
+    }
+
     @GetMapping("deliveries-by-status")
     public List<Delivery> getAllDeliveriesByStatus(@RequestParam(value = "status", required = false) String status){
         try {
@@ -67,7 +72,16 @@ public class DeliveryController {
     }
 
     @PutMapping("deliver-delivery")
-    public ResponseEntity<DeliveryResponse> deliverDelivery(@RequestParam("id") Integer id, @RequestParam("realQuantity") Long realQuantity){
-        return ResponseEntity.ok(deliveryService.deliverDelivery(id, realQuantity));
+    public ResponseEntity<DeliveryResponse> deliverDelivery(@RequestParam("id") Integer id,
+                                                            @RequestParam("realQuantity") Long realQuantity,
+                                                            @RequestParam(value = "deliveryDate", required = false) String deliveryDate)
+            throws ParseException {
+        Timestamp timestampDeliveryDate = new Timestamp(System.currentTimeMillis());
+        if(deliveryDate != null && !deliveryDate.equals("")){
+            SimpleDateFormat timestampDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm");
+            Date parsedDate = timestampDateFormat.parse(deliveryDate);
+            timestampDeliveryDate = new Timestamp(parsedDate.getTime());
+        }
+        return ResponseEntity.ok(deliveryService.deliverDelivery(id, realQuantity,timestampDeliveryDate));
     }
 }

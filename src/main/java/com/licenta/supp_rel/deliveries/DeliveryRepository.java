@@ -9,4 +9,6 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Integer> {
     List<Delivery> findByStatus(DeliveryStatus status);
 
     List<Delivery> findByContract(Contract contract);
+
+    List<Delivery> findByContractAndStatus(Contract contract, DeliveryStatus status);
 }

@@ -1,5 +1,6 @@
 package com.licenta.supp_rel.ratings;
 
+import com.licenta.supp_rel.contracts.ContractService;
 import com.licenta.supp_rel.deliveries.Delivery;
 import com.licenta.supp_rel.deliveries.DeliveryService;
 import com.licenta.supp_rel.deviations.Deviation;
@@ -21,6 +22,8 @@ public class RatingService {
     @Autowired
     DeliveryService deliveryService;
     @Autowired
+    ContractService contractService;
+    @Autowired
     SupplierRepository supplierRepository;
     @Autowired
     RatingRepository ratingRepository;
@@ -35,7 +38,7 @@ public class RatingService {
     private float medDaysDayPlusWeight;
     private float dayMinusDeviNumberWeight;
     private float dayPlusDeviNumberWeight;
-    private float priceWeight;
+//    private float priceWeight;
 
     List<Rating> createRatings(String supplierId, String materialCode) {
         minDeliveries = Integer.parseInt(systemConfigurationService.findPropertiesByGroupAndName("ratings",
@@ -65,66 +68,72 @@ public class RatingService {
         dayPlusDeviNumberWeight = Float.parseFloat(systemConfigurationService.findPropertiesByGroupAndName("ratings",
                 "ratings_weightage",
                 new ArrayList<>(List.of("dayPlusDeviNumberWeight"))).get(0));
-        priceWeight = Float.parseFloat(systemConfigurationService.findPropertiesByGroupAndName("ratings",
-                "ratings_weightage",
-                new ArrayList<>(List.of("priceWeight"))).get(0));
+//        priceWeight = Float.parseFloat(systemConfigurationService.findPropertiesByGroupAndName("ratings",
+//                "ratings_weightage",
+//                new ArrayList<>(List.of("priceWeight"))).get(0));
         Supplier supplier = null;
         if (supplierId != null)
             supplier = supplierRepository.findById(supplierId).orElse(null);
         List<Rating> ratings = new ArrayList<>();
 
-        if (supplier == null) {
-            List<Supplier> suppliers = supplierRepository.findAll();
-            for (Supplier supp : suppliers) {
-                Rating rating = getRatingBySupplier(supp, materialCode);
-                if (ratingRepository.existsBySupplierAndMaterialCodeAndQtyPercentageRatingAndQtyNrDevisRatingAndDayPercentageRatingAndDayNrDevisRating
-                        (rating.getSupplier().getId(), rating.getMaterialCode())) {
-                    System.out.println("rating exists");
-                    Rating existingRating = ratingRepository.findBySupplierAndMaterialCode(rating.getSupplier(), rating.getMaterialCode()).orElse(null);
-                    rating.setId(existingRating.getId()); //TODO:add nullpointerexcpetion fix
-                    ratingRepository.save(rating);
-                } else {
-                    ratings.add(rating);
-                    ratingRepository.save(rating);
+        List<Supplier> suppliers;
+        if (supplier == null)
+            suppliers = supplierRepository.findAll();
+        else
+            suppliers = List.of(supplier);
+
+        for (Supplier supp : suppliers) {
+            List<String> materialCodes = new ArrayList<>();
+            if (materialCode == null || materialCode.isEmpty()) {
+                materialCodes = contractService.findMaterialCodesBySupplier(supp);
+                materialCodes.add(null);
+            } else
+                materialCodes.add(materialCode);
+            for (String matCode : materialCodes) {
+                Rating rating = getRatingBySupplier(supp, matCode);
+                if (rating != null) {
+                    if (ratingRepository.existsBySupplierAndMaterialCodeAndQtyPercentageRatingAndQtyNrDevisRatingAndDayPercentageRatingAndDayNrDevisRating
+                            (rating.getSupplier().getId(), rating.getMaterialCode())) {
+                        ratingRepository.findBySupplierAndMaterialCode(rating.getSupplier(),
+                                rating.getMaterialCode()).ifPresent(existingRating -> {
+                            rating.setId(existingRating.getId());
+                            ratingRepository.save(rating);
+                        });
+
+                    } else {
+                        ratings.add(rating);
+                        ratingRepository.save(rating);
+                    }
                 }
             }
-
-        } else {
-            Rating rating = getRatingBySupplier(supplier, materialCode);
-            if (ratingRepository.existsBySupplierAndMaterialCodeAndQtyPercentageRatingAndQtyNrDevisRatingAndDayPercentageRatingAndDayNrDevisRating
-                    (rating.getSupplier().getId(), rating.getMaterialCode())) {
-                System.out.println("rating exists");
-                Rating existingRating = ratingRepository.findBySupplierAndMaterialCode(rating.getSupplier(), rating.getMaterialCode()).orElse(null);
-                rating.setId(existingRating.getId());
-                ratingRepository.save(rating);
-            } else {
-                ratings.add(rating);
-                ratingRepository.save(rating);
-            }
         }
+        curveRating();
         return ratings;
     }
 
-    public Rating getRatingBySupplier(Supplier supplier, String materialCode) {
+    private Rating getRatingBySupplier(Supplier supplier, String materialCode) {
         float medPercQtyMinus = 0F;
         float medPercQtyPlus = 0F;
 
         float medDaysDayMinus = 0F;
         float medDaysDayPlus = 0F;
 
-        //TODO: add priceDiff to ratingCalc
-
         int qtyMinusDeviNumber = 0;
         int qtyPlusDeviNumber = 0;
         int dayMinusDeviNumber = 0;
         int dayPlusDeviNumber = 0;
 
-        int totalDeliveries = 0;
+        int correctDeliveriesNr = 0;
 
-        List<Delivery> deliveries = deliveryService.findAllBySupplierIdAndMaterialCode(supplier, materialCode);
-        totalDeliveries = deliveries.size();
+        List<Delivery> deliveries = deliveryService.findAllBySupplierIdAndMaterialCodeAndStatus(supplier, materialCode, "delivered");
+        int totalDeliveries = deliveries.size();
+
+        if (totalDeliveries < minDeliveries)
+            return null;
         for (Delivery delivery : deliveries) {
             List<Deviation> foundDeviations = deviationRepository.findByDelivery(delivery);
+            if (foundDeviations.size() == 0)
+                correctDeliveriesNr++;
             for (Deviation deviation : foundDeviations) {
                 if (deviation.getType().equals(DeviationTypes.qtyMinus)) {
                     medPercQtyMinus += deviation.getQuantityDiff();
@@ -152,18 +161,6 @@ public class RatingService {
         if (dayPlusDeviNumber != 0)
             medDaysDayPlus /= dayPlusDeviNumber;
 
-        System.out.println("medPercQtyMinus: " + medPercQtyMinus);
-        System.out.println("medPercQtyPlus: " + medPercQtyPlus);
-
-        System.out.println("qtyMinusDeviNumber: " + qtyMinusDeviNumber);
-        System.out.println("qtyPlusDeviNumber: " + qtyPlusDeviNumber);
-
-        System.out.println("medDaysDayMinus: " + medDaysDayMinus);
-        System.out.println("medDaysDayPlus: " + medDaysDayPlus);
-
-        System.out.println("dayMinusDeviNumber: " + dayMinusDeviNumber);
-        System.out.println("dayPlusDeviNumber: " + dayPlusDeviNumber);
-
         float ratingPercentageQty = medPercQtyMinusWeight * medPercQtyMinus +
                 medPercQtyPlusWeight * medPercQtyPlus;//lower is better(0-inf)
         float ratingNrDeviationsQty = 1 - (qtyMinusDeviNumberWeight * qtyMinusDeviNumber / totalDeliveries +
@@ -173,21 +170,54 @@ public class RatingService {
                 medDaysDayPlusWeight * medDaysDayPlus;//lower is better(0-inf)
         float ratingNrDeviationsDay = 1 - (dayMinusDeviNumberWeight * dayMinusDeviNumber / totalDeliveries +
                 dayPlusDeviNumberWeight * dayPlusDeviNumber / totalDeliveries);//higher is better (1-0)
-        System.out.println(ratingPercentageQty);
-        System.out.println(ratingNrDeviationsQty);
-        System.out.println(ratingPercentageDay);
-        System.out.println(ratingNrDeviationsDay);
+
         Rating rating = new Rating();
         rating.setQtyPercentageRating(ratingPercentageQty);
         rating.setQtyNrDevisRating(ratingNrDeviationsQty);
         rating.setDayPercentageRating(ratingPercentageDay);
         rating.setDayNrDevisRating(ratingNrDeviationsDay);
+        rating.setTotalNumberDeliveries(totalDeliveries);
+        rating.setCorrectDeliveriesPercentage((float) correctDeliveriesNr / totalDeliveries);
         rating.setSupplier(supplier);
         if (materialCode == null || materialCode.equals(""))
             rating.setMaterialCode("all");
         else
             rating.setMaterialCode(materialCode);
         return rating;
+    }
+
+    private void curveRating() {
+        List<String> allMaterials = new ArrayList<>();
+        List<Rating> ratings = ratingRepository.findAll();
+        for (Rating rating : ratings) {
+            if(!allMaterials.contains(rating.getMaterialCode()))
+                allMaterials.add(rating.getMaterialCode());
+        }
+
+        for (String material : allMaterials) {
+            Float maxQty = Float.MIN_VALUE;
+            Float maxDay = Float.MIN_VALUE;
+            for (Rating rating : ratings) {
+                if (rating.getMaterialCode().equals(material)) {
+                    if(rating.getQtyPercentageRating() > maxQty)
+                        maxQty = rating.getQtyPercentageRating();
+                    if(rating.getDayPercentageRating() > maxDay)
+                        maxDay = rating.getDayPercentageRating();
+                }
+            }
+
+            System.out.println("-------");
+            System.out.println(material);
+            System.out.println(maxQty);
+            System.out.println(maxDay);
+            for (Rating rating : ratings) {
+                if (rating.getMaterialCode().equals(material)) {
+                    rating.setQtyDeviationCurveRating(1-(rating.getQtyPercentageRating()/maxQty));
+                    rating.setDayDeviationCurveRating(1-(rating.getDayPercentageRating()/maxDay));
+                    ratingRepository.save(rating);
+                }
+            }
+        }
     }
 
 }

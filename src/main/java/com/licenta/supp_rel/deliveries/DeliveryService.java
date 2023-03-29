@@ -50,11 +50,11 @@ public class DeliveryService {
         return null;
     }
 
-    public DeliveryResponse deliverDelivery(Integer id, Long realQuantity) {
+    public DeliveryResponse deliverDelivery(Integer id, Long realQuantity, Timestamp deliveryDate) {
         DeliveryResponse deliveryResponse = new DeliveryResponse();
         Delivery delivery = deliveryRepository.findById(id).orElse(null);
         if (delivery != null) {
-            delivery.setDeliveryDate(new Timestamp(System.currentTimeMillis()));
+            delivery.setDeliveryDate(deliveryDate);
             delivery.setStatus(DeliveryStatus.delivered);
             delivery.setRealQuantity(realQuantity);
             deliveryRepository.save(delivery);
@@ -65,7 +65,7 @@ public class DeliveryService {
         return null;
     }
 
-    public List<Delivery> findAllBySupplierIdAndMaterialCode(Supplier supplier, String materialCode) {
+    public List<Delivery> findAllBySupplierIdAndMaterialCodeAndStatus(Supplier supplier, String materialCode, String status) {
         List<Contract> contracts;
         if(!(materialCode == null) && !materialCode.isEmpty())
             contracts = contractRepository.findAllBySupplierAndMaterialCode(supplier, materialCode);
@@ -73,7 +73,7 @@ public class DeliveryService {
             contracts = contractRepository.findAllBySupplier(supplier);
         List<Delivery> deliveries = new ArrayList<>();
         for (Contract contract : contracts) {
-            List<Delivery> deliveriesFound = deliveryRepository.findByContract(contract);
+            List<Delivery> deliveriesFound = deliveryRepository.findByContractAndStatus(contract, DeliveryStatus.valueOf(status));
             if (!deliveriesFound.isEmpty())
                 deliveries.addAll(deliveriesFound);
         }

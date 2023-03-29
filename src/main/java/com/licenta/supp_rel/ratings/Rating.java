@@ -27,4 +27,8 @@ public class Rating {
     private Float qtyNrDevisRating;
     private Float dayPercentageRating;
     private Float dayNrDevisRating;
+    private Integer totalNumberDeliveries;
+    private Float correctDeliveriesPercentage;
+    private Float qtyDeviationCurveRating;
+    private Float dayDeviationCurveRating;
 }

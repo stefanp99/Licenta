@@ -1,5 +1,6 @@
 package com.licenta.supp_rel.contracts;
 
+import com.licenta.supp_rel.suppliers.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -30,5 +31,13 @@ public class ContractService {
             }
         }
         return matchingContracts;
+    }
+
+    public List<String> findMaterialCodesBySupplier(Supplier supplier){
+        List<String> returnedList = new ArrayList<>();
+        List<Contract> contracts = contractRepository.findAllBySupplier(supplier);
+        for(Contract contract: contracts)
+            returnedList.add(contract.getMaterialCode());
+        return returnedList;
     }
 }
