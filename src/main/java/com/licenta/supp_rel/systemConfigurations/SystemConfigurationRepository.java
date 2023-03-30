@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface SystemConfigurationRepository extends JpaRepository<SystemConfiguration, Integer> {
     List<SystemConfiguration> findAllByConfigGroupAndConfigName(String configGroup, String configName);
+    List<SystemConfiguration> findAllByConfigGroup(String configGroup);
 }

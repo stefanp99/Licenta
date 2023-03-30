@@ -31,4 +31,6 @@ public class Rating {
     private Float correctDeliveriesPercentage;
     private Float qtyDeviationCurveRating;
     private Float dayDeviationCurveRating;
+    private Float priceDeviationPercentage;
+    private Float averageNumberOfHoursToDeliver;
 }

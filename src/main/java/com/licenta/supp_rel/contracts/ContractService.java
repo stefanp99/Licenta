@@ -33,11 +33,26 @@ public class ContractService {
         return matchingContracts;
     }
 
-    public List<String> findMaterialCodesBySupplier(Supplier supplier){
+    public List<String> findMaterialCodesBySupplier(Supplier supplier) {
         List<String> returnedList = new ArrayList<>();
         List<Contract> contracts = contractRepository.findAllBySupplier(supplier);
-        for(Contract contract: contracts)
+        for (Contract contract : contracts)
             returnedList.add(contract.getMaterialCode());
         return returnedList;
+    }
+
+    public Float getAveragePriceByMaterialCode(String materialCode) {
+        List<Contract> contracts = contractRepository.findAllByMaterialCode(materialCode);
+        Float totalPrice = 0F;
+        for (Contract contract : contracts)
+            totalPrice += contract.getPricePerUnit();
+        return totalPrice / contracts.size();
+    }
+
+    public Contract findContractBySupplierAndMaterialCode(Supplier supplier, String materialCode) {
+        List<Contract> contracts = contractRepository.findAllBySupplierAndMaterialCode(supplier, materialCode);
+        if (contracts.size() > 0)
+            return contracts.get(0);
+        return null;
     }
 }
