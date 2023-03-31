@@ -39,10 +39,10 @@ public class DeliveryService {
         return deliveriesFromDay;
     }
 
-    public Delivery dispatchDelivery(Integer id) {
+    public Delivery dispatchDelivery(Integer id, Timestamp dispatchDate) {
         Delivery delivery = deliveryRepository.findById(id).orElse(null);
         if (delivery != null) {
-            delivery.setDispatchDate(new Timestamp(System.currentTimeMillis()));
+            delivery.setDispatchDate(dispatchDate);
             delivery.setStatus(DeliveryStatus.dispatched);
             deliveryRepository.save(delivery);
             return delivery;

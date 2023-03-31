@@ -24,8 +24,8 @@ public class DeliveryController {
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
     @GetMapping("deliveries-by-date")
-    public List<Delivery> getAllDeliveriesByDate(@RequestParam(value = "date", required = false) String date){
-        if(date == null || date.equals("")) {
+    public List<Delivery> getAllDeliveriesByDate(@RequestParam(value = "date", required = false) String date) {
+        if (date == null || date.equals("")) {
             date = dateFormat.format(new Date());
         }
         try {
@@ -36,24 +36,23 @@ public class DeliveryController {
     }
 
     @GetMapping("deliveries-by-id")
-    public Delivery getDeliveryById(@RequestParam("id") Integer id){
+    public Delivery getDeliveryById(@RequestParam("id") Integer id) {
         return deliveryRepository.findById(id).orElse(null);
     }
 
     @GetMapping("deliveries-by-status")
-    public List<Delivery> getAllDeliveriesByStatus(@RequestParam(value = "status", required = false) String status){
+    public List<Delivery> getAllDeliveriesByStatus(@RequestParam(value = "status", required = false) String status) {
         try {
             return deliveryRepository.findByStatus(DeliveryStatus.valueOf(status));
-        }
-        catch (IllegalArgumentException | NullPointerException e){
+        } catch (IllegalArgumentException | NullPointerException e) {
             return deliveryRepository.findAll();
         }
     }
 
     @PostMapping("add-delivery")
-        public Delivery addDelivery(@RequestParam("expectedQuantity") Long expectedQuantity,
-                                    @RequestParam("expectedDeliveryDate") String expectedDeliveryDate,
-                                    @RequestParam("contractId") Integer contractId) throws ParseException {
+    public Delivery addDelivery(@RequestParam("expectedQuantity") Long expectedQuantity,
+                                @RequestParam("expectedDeliveryDate") String expectedDeliveryDate,
+                                @RequestParam("contractId") Integer contractId) throws ParseException {
         SimpleDateFormat timestampDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm");
         Date parsedDate = timestampDateFormat.parse(expectedDeliveryDate);
         Timestamp timestampExpectedDeliveryDate = new Timestamp(parsedDate.getTime());
@@ -67,8 +66,15 @@ public class DeliveryController {
     }
 
     @PutMapping("dispatch-delivery")
-    public Delivery dispatchDelivery(@RequestParam("id") Integer id){
-        return deliveryService.dispatchDelivery(id);
+    public Delivery dispatchDelivery(@RequestParam("id") Integer id,
+                                     @RequestParam(value = "dispatchDate", required = false) String dispatchDate) throws ParseException {
+        Timestamp timestampDispatchDate = new Timestamp(System.currentTimeMillis());
+        if (dispatchDate != null && !dispatchDate.equals("")) {
+            SimpleDateFormat timestampDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm");
+            Date parsedDate = timestampDateFormat.parse(dispatchDate);
+            timestampDispatchDate = new Timestamp(parsedDate.getTime());
+        }
+        return deliveryService.dispatchDelivery(id, timestampDispatchDate);
     }
 
     @PutMapping("deliver-delivery")
@@ -77,11 +83,11 @@ public class DeliveryController {
                                                             @RequestParam(value = "deliveryDate", required = false) String deliveryDate)
             throws ParseException {
         Timestamp timestampDeliveryDate = new Timestamp(System.currentTimeMillis());
-        if(deliveryDate != null && !deliveryDate.equals("")){
+        if (deliveryDate != null && !deliveryDate.equals("")) {
             SimpleDateFormat timestampDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm");
             Date parsedDate = timestampDateFormat.parse(deliveryDate);
             timestampDeliveryDate = new Timestamp(parsedDate.getTime());
         }
-        return ResponseEntity.ok(deliveryService.deliverDelivery(id, realQuantity,timestampDeliveryDate));
+        return ResponseEntity.ok(deliveryService.deliverDelivery(id, realQuantity, timestampDeliveryDate));
     }
 }

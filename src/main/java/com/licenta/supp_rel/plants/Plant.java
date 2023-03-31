@@ -17,6 +17,8 @@ public class Plant {
     private String id;
     private String cityCountry;
     private String segment;
+    private Float cityLongitude;
+    private Float cityLatitude;
 
     public String getCity(){
         return cityCountry.substring(0, cityCountry.indexOf("/"));

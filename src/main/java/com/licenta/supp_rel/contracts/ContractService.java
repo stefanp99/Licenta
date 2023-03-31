@@ -1,5 +1,6 @@
 package com.licenta.supp_rel.contracts;
 
+import com.licenta.supp_rel.plants.Plant;
 import com.licenta.supp_rel.suppliers.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -53,6 +54,37 @@ public class ContractService {
         List<Contract> contracts = contractRepository.findAllBySupplierAndMaterialCode(supplier, materialCode);
         if (contracts.size() > 0)
             return contracts.get(0);
+        return null;
+    }
+
+    private Float calculateDistanceBySupplierAndPlant(Supplier supplier, Plant plant){
+        int radius = 6371; // Radius of the earth in km
+        Float latSupplier = supplier.getCityLatitude();
+        Float lonSupplier = supplier.getCityLongitude();
+
+        Float latPlant = plant.getCityLatitude();
+        Float lonPlant = plant.getCityLongitude();
+
+        float latDistance = (float) Math.toRadians(latSupplier-latPlant);
+        float lonDistance = (float) Math.toRadians(lonSupplier-lonPlant);
+        float a = (float) (Math.sin(latDistance / 2) * Math.sin(latDistance / 2) +
+                        Math.cos(Math.toRadians(latSupplier)) * Math.cos(Math.toRadians(latPlant)) *
+                                Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2));
+        float c = (float) (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+        return radius * c;
+    }
+
+    public Float averageDistanceBySupplierAndMaterialsAndPlants(Supplier supplier, List<String> materialCodes, List<Plant> plants){
+        List<Contract> contracts = new ArrayList<>();
+        float totalDistance = 0F;
+        for(String materialCode: materialCodes) {
+            for(Plant plant: plants)
+                contracts.addAll(contractRepository.findAllBySupplierAndMaterialCodeAndPlant(supplier, materialCode, plant));
+        }
+        for (Contract contract : contracts)
+            totalDistance += calculateDistanceBySupplierAndPlant(contract.getSupplier(), contract.getPlant());
+        if(contracts.size() > 0)
+            return totalDistance/contracts.size();
         return null;
     }
 }

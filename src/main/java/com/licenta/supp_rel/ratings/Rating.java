@@ -33,4 +33,5 @@ public class Rating {
     private Float dayDeviationCurveRating;
     private Float priceDeviationPercentage;
     private Float averageNumberOfHoursToDeliver;
+    private Float distanceToPlant;
 }

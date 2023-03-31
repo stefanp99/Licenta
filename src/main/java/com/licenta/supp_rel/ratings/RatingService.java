@@ -9,6 +9,7 @@ import com.licenta.supp_rel.deliveries.DeliveryService;
 import com.licenta.supp_rel.deviations.Deviation;
 import com.licenta.supp_rel.deviations.DeviationRepository;
 import com.licenta.supp_rel.deviations.DeviationTypes;
+import com.licenta.supp_rel.plants.Plant;
 import com.licenta.supp_rel.suppliers.Supplier;
 import com.licenta.supp_rel.suppliers.SupplierRepository;
 import com.licenta.supp_rel.systemConfigurations.RatingsWeightageDTO;
@@ -90,6 +91,7 @@ public class RatingService {
         return null;
     }
 
+    //TODO: add to rating calculation also plant
     private Rating getRatingBySupplierAndMaterial(Supplier supplier, String materialCode, RatingsWeightageDTO ratingsWeightageDTO) {
         float medPercQtyMinus = 0F;
         float medPercQtyPlus = 0F;
@@ -111,9 +113,11 @@ public class RatingService {
             return null;
 
         float totalTimeDifferenceInHours = 0F;
+        List<Plant> plants = new ArrayList<>();
         for (Delivery delivery : deliveries) {
+            plants.add(delivery.getContract().getPlant());
             float timeDifferenceInHours;
-            timeDifferenceInHours = Math.abs((delivery.getDeliveryDate().getTime() - delivery.getDispatchDate().getTime())/(float)(60 * 60 * 1000));
+            timeDifferenceInHours = Math.abs((delivery.getDeliveryDate().getTime() - delivery.getDispatchDate().getTime()) / (float) (60 * 60 * 1000));
             totalTimeDifferenceInHours += timeDifferenceInHours;
             List<Deviation> foundDeviations = deviationRepository.findByDelivery(delivery);
             if (foundDeviations.size() == 0)
@@ -163,14 +167,17 @@ public class RatingService {
         rating.setTotalNumberDeliveries(totalDeliveriesNumber);
         rating.setCorrectDeliveriesPercentage((float) correctDeliveriesNr / totalDeliveriesNumber);
         rating.setSupplier(supplier);
-        rating.setAverageNumberOfHoursToDeliver(totalTimeDifferenceInHours /deliveries.size());
-        if (materialCode == null || materialCode.equals(""))
+        rating.setAverageNumberOfHoursToDeliver(totalTimeDifferenceInHours / deliveries.size());
+        if (materialCode == null || materialCode.equals("")) {
             rating.setMaterialCode("all");
-        else {
+            rating.setDistanceToPlant(contractService.averageDistanceBySupplierAndMaterialsAndPlants(rating.getSupplier(),
+                    contractService.findMaterialCodesBySupplier(rating.getSupplier()), plants));
+        } else {
             rating.setMaterialCode(materialCode);
             Float averagePrice = contractService.getAveragePriceByMaterialCode(materialCode);
             Contract contract = contractService.findContractBySupplierAndMaterialCode(supplier, materialCode);
-            rating.setPriceDeviationPercentage((contract.getPricePerUnit()-averagePrice)*100/averagePrice);
+            rating.setPriceDeviationPercentage((contract.getPricePerUnit() - averagePrice) * 100 / averagePrice);
+            rating.setDistanceToPlant(contractService.averageDistanceBySupplierAndMaterialsAndPlants(rating.getSupplier(), List.of(rating.getMaterialCode()), plants));
         }
         return rating;
     }

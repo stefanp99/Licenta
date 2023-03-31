@@ -19,6 +19,8 @@ public class Supplier {
     private String id;
     private String cityCountry;
     private String name;
+    private Float cityLongitude;
+    private Float cityLatitude;
 
     public String getCity(){
         return cityCountry.substring(0, cityCountry.indexOf("/"));
