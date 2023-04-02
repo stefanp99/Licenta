@@ -1,9 +1,10 @@
 package com.licenta.supp_rel.deliveries;
 
 import com.licenta.supp_rel.contracts.Contract;
-import com.licenta.supp_rel.contracts.ContractRepository;
+import com.licenta.supp_rel.contracts.ContractService;
 import com.licenta.supp_rel.deviations.DeviationRepository;
 import com.licenta.supp_rel.deviations.DeviationService;
+import com.licenta.supp_rel.plants.PlantRepository;
 import com.licenta.supp_rel.suppliers.Supplier;
 import com.licenta.supp_rel.suppliers.SupplierRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,9 +25,11 @@ public class DeliveryService {
     @Autowired
     DeviationRepository deviationRepository;
     @Autowired
-    ContractRepository contractRepository;
+    ContractService contractService;
     @Autowired
     SupplierRepository supplierRepository;
+    @Autowired
+    PlantRepository plantRepository;
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -65,12 +68,12 @@ public class DeliveryService {
         return null;
     }
 
-    public List<Delivery> findAllBySupplierIdAndMaterialCodeAndStatus(Supplier supplier, String materialCode, String status) {
+    public List<Delivery> findAllBySupplierAndMaterialCodeAndPlantIdAndStatus(Supplier supplier, String materialCode, String plantId, String status) {
         List<Contract> contracts;
-        if(!(materialCode == null) && !materialCode.isEmpty())
-            contracts = contractRepository.findAllBySupplierAndMaterialCode(supplier, materialCode);
+        if(plantId != null)
+            contracts = contractService.findContractsBySupplierAndMaterialCodeAndPlantNoRepeat(supplier, materialCode, plantRepository.findById(plantId).orElse(null));
         else
-            contracts = contractRepository.findAllBySupplier(supplier);
+            contracts = contractService.findContractsBySupplierAndMaterialCodeAndPlantNoRepeat(supplier, materialCode, null);
         List<Delivery> deliveries = new ArrayList<>();
         for (Contract contract : contracts) {
             List<Delivery> deliveriesFound = deliveryRepository.findByContractAndStatus(contract, DeliveryStatus.valueOf(status));

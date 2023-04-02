@@ -5,9 +5,7 @@ import com.licenta.supp_rel.suppliers.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class ContractService {
@@ -42,6 +40,14 @@ public class ContractService {
         return returnedList;
     }
 
+    public List<Plant> findPlantsBySupplier(Supplier supplier) {
+        List<Plant> returnedList = new ArrayList<>();
+        List<Contract> contracts = contractRepository.findAllBySupplier(supplier);
+        for (Contract contract : contracts)
+            returnedList.add(contract.getPlant());
+        return returnedList;
+    }
+
     public Float getAveragePriceByMaterialCode(String materialCode) {
         List<Contract> contracts = contractRepository.findAllByMaterialCode(materialCode);
         Float totalPrice = 0F;
@@ -50,14 +56,47 @@ public class ContractService {
         return totalPrice / contracts.size();
     }
 
-    public Contract findContractBySupplierAndMaterialCode(Supplier supplier, String materialCode) {
-        List<Contract> contracts = contractRepository.findAllBySupplierAndMaterialCode(supplier, materialCode);
-        if (contracts.size() > 0)
-            return contracts.get(0);
-        return null;
+    public Float getAveragePriceByMaterialCodeAndPlant(String materialCode, Plant plant) {
+        List<Contract> contracts = contractRepository.findAllByMaterialCodeAndPlant(materialCode, plant);
+        Float totalPrice = 0F;
+        for (Contract contract : contracts)
+            totalPrice += contract.getPricePerUnit();
+        return totalPrice / contracts.size();
     }
 
-    private Float calculateDistanceBySupplierAndPlant(Supplier supplier, Plant plant){
+    public List<Contract> findContractsBySupplierAndMaterialCode(Supplier supplier, String materialCode) {
+        return contractRepository.findAllBySupplierAndMaterialCode(supplier, materialCode);
+    }
+
+    public List<Contract> findContractsBySupplierAndPlant(Supplier supplier, Plant plant) {
+        return contractRepository.findAllBySupplierAndPlant(supplier, plant);
+    }
+
+    public List<Contract> findContractsBySupplierAndMaterialCodeAndPlant(Supplier supplier, String materialCode, Plant plant) {
+        return contractRepository.findAllBySupplierAndMaterialCodeAndPlant(supplier, materialCode, plant);
+    }
+
+    public List<Contract> findContractsBySupplierAndMaterialCodeAndPlantNoRepeat(Supplier supplier, String materialCode, Plant plant) {
+        List<Contract> contracts;
+        if(materialCode == null) {
+            if (plant == null)
+                contracts = contractRepository.findAllBySupplier(supplier);
+            else
+                contracts = contractRepository.findAllBySupplierAndPlant(supplier, plant);
+        }
+        else{
+            if(plant == null)
+                contracts = contractRepository.findAllBySupplierAndMaterialCode(supplier, materialCode);
+            else
+                contracts = contractRepository.findAllBySupplierAndMaterialCodeAndPlant(supplier, materialCode, plant);
+        }
+        Set<Contract> set = new HashSet<>(contracts);
+        contracts.clear();
+        contracts.addAll(set);
+        return contracts;
+    }
+
+    public Float calculateDistanceBySupplierAndPlant(Supplier supplier, Plant plant){
         int radius = 6371; // Radius of the earth in km
         Float latSupplier = supplier.getCityLatitude();
         Float lonSupplier = supplier.getCityLongitude();
@@ -86,5 +125,20 @@ public class ContractService {
         if(contracts.size() > 0)
             return totalDistance/contracts.size();
         return null;
+    }
+
+    public List<Plant> findPlantsBySupplierAndMaterialCode(Supplier supp, String matCode) {
+        List<Plant> plants = new ArrayList<>();
+        List<Contract> contracts;
+        if(matCode == null)
+            contracts = contractRepository.findAllBySupplier(supp);
+        else
+            contracts = contractRepository.findAllBySupplierAndMaterialCode(supp, matCode);
+        Set<Contract> set = new HashSet<>(contracts);
+        contracts.clear();
+        contracts.addAll(set);
+        for (Contract contract : contracts)
+            plants.add(contract.getPlant());
+        return plants;
     }
 }

@@ -11,6 +11,7 @@ public interface ContractRepository extends JpaRepository<Contract, Integer> {
 
     List<Contract> findAllBySupplierAndMaterialCode(Supplier supplier, String materialCode);
     List<Contract> findAllBySupplierAndMaterialCodeAndPlant(Supplier supplier, String materialCode, Plant plant);
-
+    List<Contract> findAllBySupplierAndPlant(Supplier supplier, Plant plant);
     List<Contract> findAllByMaterialCode(String materialCode);
+    List<Contract> findAllByMaterialCodeAndPlant(String materialCode, Plant plant);
 }

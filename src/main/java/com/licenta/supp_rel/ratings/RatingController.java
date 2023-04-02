@@ -15,7 +15,8 @@ public class RatingController {
     private final RatingService ratingService;
     @PostMapping("calculateRatings")
     public List<Rating> calculateRatings(@RequestParam(value = "supplierId", required = false) String supplierId,
-                                         @RequestParam(value = "materialCode", required = false) String materialCode){
-        return ratingService.createRatings(supplierId, materialCode);
+                                         @RequestParam(value = "materialCode", required = false) String materialCode,
+                                         @RequestParam(value = "plantId", required = false) String plantId){
+        return ratingService.createRatings(supplierId, materialCode, plantId);
     }
 }

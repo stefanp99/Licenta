@@ -10,6 +10,7 @@ import com.licenta.supp_rel.deviations.Deviation;
 import com.licenta.supp_rel.deviations.DeviationRepository;
 import com.licenta.supp_rel.deviations.DeviationTypes;
 import com.licenta.supp_rel.plants.Plant;
+import com.licenta.supp_rel.plants.PlantRepository;
 import com.licenta.supp_rel.suppliers.Supplier;
 import com.licenta.supp_rel.suppliers.SupplierRepository;
 import com.licenta.supp_rel.systemConfigurations.RatingsWeightageDTO;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class RatingService {
@@ -30,13 +32,15 @@ public class RatingService {
     @Autowired
     ContractService contractService;
     @Autowired
+    PlantRepository plantRepository;
+    @Autowired
     SupplierRepository supplierRepository;
     @Autowired
     RatingRepository ratingRepository;
     @Autowired
     DeviationRepository deviationRepository;
 
-    List<Rating> createRatings(String supplierId, String materialCode) {
+    List<Rating> createRatings(String supplierId, String materialCode, String plantId) {
         ObjectMapper objectMapper = new ObjectMapper();
         List<SystemConfiguration> systemConfigurations = systemConfigurationRepository.findAllByConfigGroupAndConfigName("ratings", "ratings_weightage");
         SystemConfiguration systemConfiguration = null;
@@ -64,25 +68,26 @@ public class RatingService {
                         materialCodes.add(null);
                     } else
                         materialCodes.add(materialCode);
-                    for (String matCode : materialCodes) {
-                        Rating rating = getRatingBySupplierAndMaterial(supp, matCode, ratingsWeightageDTO);
-                        if (rating != null) {
-                            if (ratingRepository.existsBySupplierAndMaterialCodeAndQtyPercentageRatingAndQtyNrDevisRatingAndDayPercentageRatingAndDayNrDevisRating
-                                    (rating.getSupplier().getId(), rating.getMaterialCode())) {
-                                ratingRepository.findBySupplierAndMaterialCode(rating.getSupplier(),
-                                        rating.getMaterialCode()).ifPresent(existingRating -> {
-                                    rating.setId(existingRating.getId());
-                                    ratingRepository.save(rating);
-                                });
 
-                            } else {
+                    for (String matCode : materialCodes) {
+                        List<String> plantIds = new ArrayList<>();
+                        if (plantId == null || plantId.isEmpty()) {
+                            List<Plant> plants = contractService.findPlantsBySupplierAndMaterialCode(supp, matCode);
+                            for (Plant plant : plants)
+                                if (!plantIds.contains(plant.getId()))
+                                    plantIds.add(plant.getId());
+                            plantIds.add(null);
+                        } else
+                            plantIds.add(plantId);
+                        for (String pId : plantIds) {
+                            Rating rating = getRatingBySupplierAndMaterial(supp, matCode, pId, ratingsWeightageDTO);
+                            if (rating != null && !ratings.contains(rating))
                                 ratings.add(rating);
-                                ratingRepository.save(rating);
-                            }
                         }
                     }
                 }
-                curveRating();
+                curveRating(ratings);
+                ratingRepository.saveAll(ratings);
                 return ratings;
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
@@ -91,8 +96,7 @@ public class RatingService {
         return null;
     }
 
-    //TODO: add to rating calculation also plant
-    private Rating getRatingBySupplierAndMaterial(Supplier supplier, String materialCode, RatingsWeightageDTO ratingsWeightageDTO) {
+    private Rating getRatingBySupplierAndMaterial(Supplier supplier, String materialCode, String plantId, RatingsWeightageDTO ratingsWeightageDTO) {
         float medPercQtyMinus = 0F;
         float medPercQtyPlus = 0F;
 
@@ -106,18 +110,15 @@ public class RatingService {
 
         int correctDeliveriesNr = 0;
 
-        List<Delivery> deliveries = deliveryService.findAllBySupplierIdAndMaterialCodeAndStatus(supplier, materialCode, "delivered");
+        List<Delivery> deliveries = deliveryService.findAllBySupplierAndMaterialCodeAndPlantIdAndStatus(supplier, materialCode, plantId, "delivered");
         int totalDeliveriesNumber = deliveries.size();
 
         if (totalDeliveriesNumber < ratingsWeightageDTO.getMinDeliveries())
             return null;
 
         float totalTimeDifferenceInHours = 0F;
-        List<Plant> plants = new ArrayList<>();
         for (Delivery delivery : deliveries) {
-            plants.add(delivery.getContract().getPlant());
-            float timeDifferenceInHours;
-            timeDifferenceInHours = Math.abs((delivery.getDeliveryDate().getTime() - delivery.getDispatchDate().getTime()) / (float) (60 * 60 * 1000));
+            float timeDifferenceInHours = Math.abs((delivery.getDeliveryDate().getTime() - delivery.getDispatchDate().getTime()) / (float) (60 * 60 * 1000));
             totalTimeDifferenceInHours += timeDifferenceInHours;
             List<Deviation> foundDeviations = deviationRepository.findByDelivery(delivery);
             if (foundDeviations.size() == 0)
@@ -168,48 +169,73 @@ public class RatingService {
         rating.setCorrectDeliveriesPercentage((float) correctDeliveriesNr / totalDeliveriesNumber);
         rating.setSupplier(supplier);
         rating.setAverageNumberOfHoursToDeliver(totalTimeDifferenceInHours / deliveries.size());
+        List<Contract> contracts;
         if (materialCode == null || materialCode.equals("")) {
             rating.setMaterialCode("all");
-            rating.setDistanceToPlant(contractService.averageDistanceBySupplierAndMaterialsAndPlants(rating.getSupplier(),
-                    contractService.findMaterialCodesBySupplier(rating.getSupplier()), plants));
+            if (plantId == null)
+                rating.setPlantId("all");
+            else {
+                rating.setDistanceToPlant(contractService.calculateDistanceBySupplierAndPlant(supplier,
+                        Objects.requireNonNull(plantRepository.findById(plantId).orElse(null))));
+                rating.setPlantId(plantId);
+            }
         } else {
+            Float averagePrice;
             rating.setMaterialCode(materialCode);
-            Float averagePrice = contractService.getAveragePriceByMaterialCode(materialCode);
-            Contract contract = contractService.findContractBySupplierAndMaterialCode(supplier, materialCode);
-            rating.setPriceDeviationPercentage((contract.getPricePerUnit() - averagePrice) * 100 / averagePrice);
-            rating.setDistanceToPlant(contractService.averageDistanceBySupplierAndMaterialsAndPlants(rating.getSupplier(), List.of(rating.getMaterialCode()), plants));
+            if (plantId == null) {
+                averagePrice = contractService.getAveragePriceByMaterialCode(materialCode);
+                contracts = contractService.findContractsBySupplierAndMaterialCode(supplier, materialCode);
+                rating.setPlantId("all");
+                //rating.setDistanceToPlant(contractService.averageDistanceBySupplierAndMaterialsAndPlants(rating.getSupplier(), List.of(rating.getMaterialCode()), plants));
+            } else {
+                averagePrice = contractService.getAveragePriceByMaterialCodeAndPlant(materialCode,
+                        plantRepository.findById(plantId).orElse(null));
+                contracts = contractService.findContractsBySupplierAndMaterialCodeAndPlant(supplier, materialCode,
+                        plantRepository.findById(plantId).orElse(null));
+                rating.setDistanceToPlant(contractService.calculateDistanceBySupplierAndPlant(supplier,
+                        Objects.requireNonNull(plantRepository.findById(plantId).orElse(null))));
+                rating.setPlantId(plantId);
+            }
+            Contract contract;
+            if (contracts.size() > 0) {
+                contract = contracts.get(0);
+                rating.setPriceDeviationPercentage((contract.getPricePerUnit() - averagePrice) * 100 / averagePrice);
+            }
         }
+
         return rating;
     }
 
-    private void curveRating() {
+    private void curveRating(List<Rating> ratings) {
         List<String> allMaterials = new ArrayList<>();
-        List<Rating> ratings = ratingRepository.findAll();
+        List<String> allPlants = new ArrayList<>();
         for (Rating rating : ratings) {
             if (!allMaterials.contains(rating.getMaterialCode()))
                 allMaterials.add(rating.getMaterialCode());
+            if (!allPlants.contains(rating.getPlantId()))
+                allPlants.add(rating.getPlantId());
         }
 
         for (String material : allMaterials) {
-            Float maxQty = Float.MIN_VALUE;
-            Float maxDay = Float.MIN_VALUE;
-            for (Rating rating : ratings) {
-                if (rating.getMaterialCode().equals(material)) {
-                    if (rating.getQtyPercentageRating() > maxQty)
-                        maxQty = rating.getQtyPercentageRating();
-                    if (rating.getDayPercentageRating() > maxDay)
-                        maxDay = rating.getDayPercentageRating();
+            for (String plantId : allPlants) {
+                Float maxQty = Float.MIN_VALUE;
+                Float maxDay = Float.MIN_VALUE;
+                for (Rating rating : ratings) {
+                    if (rating.getMaterialCode().equals(material) && rating.getPlantId().equals(plantId)) {
+                        if (rating.getQtyPercentageRating() > maxQty)
+                            maxQty = rating.getQtyPercentageRating();
+                        if (rating.getDayPercentageRating() > maxDay)
+                            maxDay = rating.getDayPercentageRating();
+                    }
                 }
-            }
 
-            for (Rating rating : ratings) {
-                if (rating.getMaterialCode().equals(material)) {
-                    rating.setQtyDeviationCurveRating(1 - (rating.getQtyPercentageRating() / maxQty));
-                    rating.setDayDeviationCurveRating(1 - (rating.getDayPercentageRating() / maxDay));
-                    ratingRepository.save(rating);
+                for (Rating rating : ratings) {
+                    if (rating.getMaterialCode().equals(material) && rating.getPlantId().equals(plantId)) {
+                        rating.setQtyDeviationCurveRating(1 - (rating.getQtyPercentageRating() / maxQty));
+                        rating.setDayDeviationCurveRating(1 - (rating.getDayPercentageRating() / maxDay));
+                    }
                 }
             }
         }
     }
-
 }

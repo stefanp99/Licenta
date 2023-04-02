@@ -34,4 +34,5 @@ public class Rating {
     private Float priceDeviationPercentage;
     private Float averageNumberOfHoursToDeliver;
     private Float distanceToPlant;
+    private String plantId;
 }
