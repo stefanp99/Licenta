@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Optional;
+import java.util.List;
 
 public interface RatingRepository extends JpaRepository<Rating, Integer> {
     @Query("SELECT COUNT(r) > 0 FROM Rating r WHERE r.supplier.id = :supplierId " +
@@ -15,7 +15,12 @@ public interface RatingRepository extends JpaRepository<Rating, Integer> {
             @Param("materialCode") String materialCode
     );
 
-    Optional<Rating> findBySupplierAndMaterialCode(Supplier supplier, String materialCode);
+    List<Rating> findBySupplierAndMaterialCode(Supplier supplier, String materialCode);
 
+    List<Rating> findBySupplierAndMaterialCodeAndPlantId(Supplier supplier, String materialCode, String plantId);
+
+    List<Rating> findBySupplier(Supplier supplier);
+
+    List<Rating> findBySupplierAndPlantId(Supplier supplier, String plantId);
 }
 

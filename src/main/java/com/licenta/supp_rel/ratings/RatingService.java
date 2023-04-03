@@ -238,4 +238,19 @@ public class RatingService {
             }
         }
     }
+
+    public List<Rating> findRatingsBySupplierMaterialCodePlantId(Supplier supplier, String materialCode, String plantId){
+        if(materialCode == null){
+            if(plantId == null)
+                return ratingRepository.findBySupplier(supplier);
+            else
+                return ratingRepository.findBySupplierAndPlantId(supplier, plantId);
+        }
+        else{
+            if(plantId == null)
+                return ratingRepository.findBySupplierAndMaterialCode(supplier, materialCode);
+            else
+                return ratingRepository.findBySupplierAndMaterialCodeAndPlantId(supplier, materialCode, plantId);
+        }
+    }
 }

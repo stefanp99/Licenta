@@ -1,5 +1,7 @@
 package com.licenta.supp_rel.suppliers;
 
+import com.licenta.supp_rel.ratings.Rating;
+import com.licenta.supp_rel.ratings.RatingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,6 +13,8 @@ import java.util.List;
 public class SupplierService {
     @Autowired
     SupplierRepository supplierRepository;
+    @Autowired
+    RatingService ratingService;
     public List<Supplier> findSuppliersByCityCountry(String cityInput, String countryInput) {
         List<Supplier> allSuppliers = supplierRepository.findAll();
         List<Supplier> matchingSuppliers = new ArrayList<>();
@@ -27,5 +31,25 @@ public class SupplierService {
             }
         }
         return matchingSuppliers;
+    }
+
+    public SupplierTooltipDTO getSupplierTooltipDTO(String supplierId) {
+        Supplier supplier = supplierRepository.findById(supplierId).orElse(null);
+        if(supplier == null)
+            return null;
+        SupplierTooltipDTO supplierTooltipDTO = new SupplierTooltipDTO();
+        supplierTooltipDTO.setId(supplier.getId());
+        supplierTooltipDTO.setName(supplier.getName());
+        supplierTooltipDTO.setCityCountry(supplier.getCityCountry());
+        List<Rating> ratings = ratingService.findRatingsBySupplierMaterialCodePlantId(supplier, "all", "all");
+        if(ratings != null && ratings.size() > 0){
+            Rating rating = ratings.get(0);
+            supplierTooltipDTO.setTotalNumberDeliveries(rating.getTotalNumberDeliveries());
+            supplierTooltipDTO.setCorrectDeliveriesPercentage(rating.getCorrectDeliveriesPercentage());
+            supplierTooltipDTO.setQtyDeviationCurveRating(rating.getQtyDeviationCurveRating());
+            supplierTooltipDTO.setDayDeviationCurveRating(rating.getDayDeviationCurveRating());
+            supplierTooltipDTO.setAverageNumberOfHoursToDeliver(rating.getAverageNumberOfHoursToDeliver());
+        }
+        return supplierTooltipDTO;
     }
 }

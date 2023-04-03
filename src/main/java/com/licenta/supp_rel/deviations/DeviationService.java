@@ -79,10 +79,10 @@ public class DeviationService {
                                 delivery.getContract().getSupplier().getId(),
                                 delivery.getContract().getMaterialCode())/100);
 
-        System.out.println("real qty:" + realQuantity);
-        System.out.println("upper limit qty: " + upperLimit);
-        System.out.println("lower limit qty: " + lowerLimit);
-        System.out.println("is qty devi: " + (realQuantity < lowerLimit || realQuantity > upperLimit));
+//        System.out.println("real qty:" + realQuantity);
+//        System.out.println("upper limit qty: " + upperLimit);
+//        System.out.println("lower limit qty: " + lowerLimit);
+//        System.out.println("is qty devi: " + (realQuantity < lowerLimit || realQuantity > upperLimit));
         return realQuantity < lowerLimit || realQuantity > upperLimit;
     }
 
@@ -105,10 +105,10 @@ public class DeviationService {
                         delivery.getContract().getSupplier().getId(),
                         delivery.getContract().getMaterialCode());
 
-        System.out.println("real day:" + realDeliveryDays);
-        System.out.println("upper limit day: " + upperLimit);
-        System.out.println("lower limit day: " + lowerLimit);
-        System.out.println("is day devi: " + (realDeliveryDays < lowerLimit || realDeliveryDays > upperLimit));
+//        System.out.println("real day:" + realDeliveryDays);
+//        System.out.println("upper limit day: " + upperLimit);
+//        System.out.println("lower limit day: " + lowerLimit);
+//        System.out.println("is day devi: " + (realDeliveryDays < lowerLimit || realDeliveryDays > upperLimit));
         return realDeliveryDays < lowerLimit || realDeliveryDays > upperLimit;
     }
 }

@@ -48,6 +48,8 @@ public class SecurityConfiguration {
                 .permitAll()
                 .requestMatchers("/contracts/**")
                 .permitAll()
+                .requestMatchers("/system-configurations/**")
+                .permitAll()
                 .anyRequest()
                 .authenticated()
                 .and()
