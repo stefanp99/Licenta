@@ -29,4 +29,5 @@ public class Delivery {
     private Contract contract;
     private Timestamp expectedDeliveryDate;
     private Long realQuantity;
+    private Timestamp addDeliveryDate;
 }

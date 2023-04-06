@@ -35,4 +35,5 @@ public class Rating {
     private Float averageNumberOfHoursToDeliver;
     private Float distanceToPlant;
     private String plantId;
+    private Float averageLeadTimeInHours;
 }

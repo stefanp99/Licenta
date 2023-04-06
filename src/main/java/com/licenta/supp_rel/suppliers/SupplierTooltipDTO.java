@@ -18,4 +18,5 @@ public class SupplierTooltipDTO {
     private Float qtyDeviationCurveRating;
     private Float dayDeviationCurveRating;
     private Float averageNumberOfHoursToDeliver;
+    private Float averageLeadTimeInHours;
 }

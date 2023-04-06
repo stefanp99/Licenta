@@ -49,6 +49,7 @@ public class SupplierService {
             supplierTooltipDTO.setQtyDeviationCurveRating(rating.getQtyDeviationCurveRating());
             supplierTooltipDTO.setDayDeviationCurveRating(rating.getDayDeviationCurveRating());
             supplierTooltipDTO.setAverageNumberOfHoursToDeliver(rating.getAverageNumberOfHoursToDeliver());
+            supplierTooltipDTO.setAverageLeadTimeInHours(rating.getAverageLeadTimeInHours());
         }
         return supplierTooltipDTO;
     }

@@ -61,6 +61,7 @@ public class DeliveryController {
         delivery.setExpectedDeliveryDate(timestampExpectedDeliveryDate);
         delivery.setContract(contractRepository.findById(contractId).orElse(null));
         delivery.setStatus(DeliveryStatus.undispatched);
+        delivery.setAddDeliveryDate(new Timestamp(System.currentTimeMillis()));
         deliveryRepository.save(delivery);
         return delivery;
     }

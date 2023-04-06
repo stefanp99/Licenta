@@ -117,9 +117,12 @@ public class RatingService {
             return null;
 
         float totalTimeDifferenceInHours = 0F;
+        float totalLeadTimeInHours = 0F;
         for (Delivery delivery : deliveries) {
             float timeDifferenceInHours = Math.abs((delivery.getDeliveryDate().getTime() - delivery.getDispatchDate().getTime()) / (float) (60 * 60 * 1000));
             totalTimeDifferenceInHours += timeDifferenceInHours;
+            float leadTimeInHours = Math.abs((delivery.getDispatchDate().getTime() - delivery.getAddDeliveryDate().getTime()) / (float) (60 * 60 * 1000));
+            totalLeadTimeInHours += leadTimeInHours;
             List<Deviation> foundDeviations = deviationRepository.findByDelivery(delivery);
             if (foundDeviations.size() == 0)
                 correctDeliveriesNr++;
@@ -169,6 +172,7 @@ public class RatingService {
         rating.setCorrectDeliveriesPercentage((float) correctDeliveriesNr / totalDeliveriesNumber);
         rating.setSupplier(supplier);
         rating.setAverageNumberOfHoursToDeliver(totalTimeDifferenceInHours / deliveries.size());
+        rating.setAverageLeadTimeInHours(totalLeadTimeInHours / deliveries.size());
         List<Contract> contracts;
         if (materialCode == null || materialCode.equals("")) {
             rating.setMaterialCode("all");
