@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Comparator;
 import java.util.List;
 
 @RestController
@@ -16,13 +17,18 @@ public class SystemConfigurationsController {
     @GetMapping("get-by-group-and-name")
     public List<SystemConfiguration> getByConfigGroupAndName(@RequestParam(value = "configGroup", required = false) String configGroup,
                                                              @RequestParam(value = "configName", required = false) String configName){
+        List<SystemConfiguration> returnedList;
         if(configName == null || configName.equals("")) {
             if (configGroup == null || configGroup.equals(""))
-                return systemConfigurationRepository.findAll();
+                returnedList = systemConfigurationRepository.findAll();
             else
-                return systemConfigurationRepository.findAllByConfigGroup(configGroup);
+                returnedList = systemConfigurationRepository.findAllByConfigGroup(configGroup);
+            returnedList.sort(Comparator.comparing(SystemConfiguration::getConfigGroup).thenComparing(SystemConfiguration::getConfigName));
+            return returnedList;
         }
-        return systemConfigurationRepository.findAllByConfigGroupAndConfigName(configGroup, configName);
+        returnedList = systemConfigurationRepository.findAllByConfigGroupAndConfigName(configGroup, configName);
+        returnedList.sort(Comparator.comparing(SystemConfiguration::getConfigGroup).thenComparing(SystemConfiguration::getConfigName));
+        return returnedList;
 
     }
     @PutMapping("modify")
