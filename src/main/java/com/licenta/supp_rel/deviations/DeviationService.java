@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -79,10 +80,6 @@ public class DeviationService {
                                 delivery.getContract().getSupplier().getId(),
                                 delivery.getContract().getMaterialCode())/100);
 
-//        System.out.println("real qty:" + realQuantity);
-//        System.out.println("upper limit qty: " + upperLimit);
-//        System.out.println("lower limit qty: " + lowerLimit);
-//        System.out.println("is qty devi: " + (realQuantity < lowerLimit || realQuantity > upperLimit));
         return realQuantity < lowerLimit || realQuantity > upperLimit;
     }
 
@@ -105,10 +102,28 @@ public class DeviationService {
                         delivery.getContract().getSupplier().getId(),
                         delivery.getContract().getMaterialCode());
 
-//        System.out.println("real day:" + realDeliveryDays);
-//        System.out.println("upper limit day: " + upperLimit);
-//        System.out.println("lower limit day: " + lowerLimit);
-//        System.out.println("is day devi: " + (realDeliveryDays < lowerLimit || realDeliveryDays > upperLimit));
         return realDeliveryDays < lowerLimit || realDeliveryDays > upperLimit;
+    }
+
+    public List<Deviation> findDeviationsByTypeSupplierMaterialPlant(String typeInput, String plantIdInput, String supplierIdInput, String materialCodeInput) {
+        List<Deviation> allDeviations = deviationRepository.findAll();
+        List<Deviation> matchingDeviations = new ArrayList<>();
+
+        List<String> plantIds = Arrays.asList(plantIdInput.split(","));
+        List<String> supplierIds = Arrays.asList(supplierIdInput.split(","));
+        List<String> materialCodes = Arrays.asList(materialCodeInput.split(","));
+        List<String> types = Arrays.asList(typeInput.split(","));
+
+        for (Deviation deviation : allDeviations) {
+            // Check if the deviation matches any of the specified plantIds, supplierIds, and materialCodes
+            if ((plantIds.contains(deviation.getDelivery().getContract().getPlant().getId()) || plantIds.contains("*")) &&
+                    (supplierIds.contains(deviation.getDelivery().getContract().getSupplier().getId()) || supplierIds.contains("*")) &&
+                    (materialCodes.contains(deviation.getDelivery().getContract().getMaterialCode()) || materialCodes.contains("*")) &&
+                    (types.contains(deviation.getType().toString()) || types.contains("*"))) {
+                // Add the matching deviation to the list
+                matchingDeviations.add(deviation);
+            }
+        }
+        return matchingDeviations;
     }
 }

@@ -40,13 +40,20 @@ public class DeliveryController {
         return deliveryRepository.findById(id).orElse(null);
     }
 
-    @GetMapping("deliveries-by-status")
-    public List<Delivery> getAllDeliveriesByStatus(@RequestParam(value = "status", required = false) String status) {
-        try {
-            return deliveryRepository.findByStatus(DeliveryStatus.valueOf(status));
-        } catch (IllegalArgumentException | NullPointerException e) {
-            return deliveryRepository.findAll();
-        }
+    @GetMapping("deliveries-by-status-supplier-material-plant")
+    public List<Delivery> getAllDeliveriesByStatusSupplierMaterialPlant(@RequestParam(value = "status", required = false) String status,
+                                                                        @RequestParam(value = "plantId", required = false) String plantId,
+                                                                        @RequestParam(value = "supplierId", required = false) String supplierId,
+                                                                        @RequestParam(value = "materialCode", required = false) String materialCode) {
+        if (status == null || status.equals("") || status.equals("null") || status.equals("All") || status.equals("all"))
+            status = "*";
+        if (plantId == null || plantId.equals("") || plantId.equals("null") || plantId.equals("All"))
+            plantId = "*";
+        if (supplierId == null || supplierId.equals("") || supplierId.equals("null") || supplierId.equals("All"))
+            supplierId = "*";
+        if (materialCode == null || materialCode.equals("") || materialCode.equals("null") || materialCode.equals("All"))
+            materialCode = "*";
+        return deliveryService.findDeliveriesByStatusSupplierMaterialPlant(status, plantId, supplierId, materialCode);
     }
 
     @PostMapping("add-delivery")

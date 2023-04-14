@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -70,7 +71,7 @@ public class DeliveryService {
 
     public List<Delivery> findAllBySupplierAndMaterialCodeAndPlantIdAndStatus(Supplier supplier, String materialCode, String plantId, String status) {
         List<Contract> contracts;
-        if(plantId != null)
+        if (plantId != null)
             contracts = contractService.findContractsBySupplierAndMaterialCodeAndPlantNoRepeat(supplier, materialCode, plantRepository.findById(plantId).orElse(null));
         else
             contracts = contractService.findContractsBySupplierAndMaterialCodeAndPlantNoRepeat(supplier, materialCode, null);
@@ -81,5 +82,27 @@ public class DeliveryService {
                 deliveries.addAll(deliveriesFound);
         }
         return deliveries;
+    }
+
+    public List<Delivery> findDeliveriesByStatusSupplierMaterialPlant(String statusInput, String plantIdInput, String supplierIdInput, String materialCodeInput) {
+        List<Delivery> allDeliveries = deliveryRepository.findAll();
+        List<Delivery> matchingDeliveries = new ArrayList<>();
+
+        List<String> plantIds = Arrays.asList(plantIdInput.split(","));
+        List<String> supplierIds = Arrays.asList(supplierIdInput.split(","));
+        List<String> materialCodes = Arrays.asList(materialCodeInput.split(","));
+        List<String> statuses = Arrays.asList(statusInput.split(","));
+
+        for (Delivery delivery : allDeliveries) {
+            // Check if the delivery matches any of the specified plantIds, supplierIds, and materialCodes
+            if ((plantIds.contains(delivery.getContract().getPlant().getId()) || plantIds.contains("*")) &&
+                    (supplierIds.contains(delivery.getContract().getSupplier().getId()) || supplierIds.contains("*")) &&
+                    (materialCodes.contains(delivery.getContract().getMaterialCode()) || materialCodes.contains("*")) &&
+                    (statuses.contains(delivery.getStatus().toString()) || statuses.contains("*"))) {
+                // Add the matching delivery to the list
+                matchingDeliveries.add(delivery);
+            }
+        }
+        return matchingDeliveries;
     }
 }
