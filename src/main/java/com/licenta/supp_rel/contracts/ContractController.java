@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Comparator;
 import java.util.List;
 
 @RestController
@@ -24,13 +25,16 @@ public class ContractController {
     public List<Contract> getContractsByMaterialCodePlantId(@RequestParam(value = "plantId", required = false) String plantId,
                                                             @RequestParam(value = "supplierId", required = false) String supplierId,
                                                             @RequestParam(value = "materialCode", required = false) String materialCode) {
+        List<Contract> returnedList;
         if (plantId == null || plantId.equals("") || plantId.equals("null") || plantId.equals("All"))
             plantId = "*";
         if (supplierId == null || supplierId.equals("") || supplierId.equals("null") || supplierId.equals("All"))
             supplierId = "*";
         if (materialCode == null || materialCode.equals("") || materialCode.equals("null") || materialCode.equals("All"))
             materialCode = "*";
-        return contractService.findContractsByPlantIdSupplierIdMaterialCode(plantId, supplierId, materialCode);
+        returnedList = contractService.findContractsByPlantIdSupplierIdMaterialCode(plantId, supplierId, materialCode);
+        returnedList.sort(Comparator.comparing(o -> o.getSupplier().getId()));
+        return returnedList;
     }
 
     @PostMapping("add")
