@@ -2,6 +2,7 @@ package com.licenta.supp_rel.ratings;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.licenta.supp_rel.charts.ChartsService;
 import com.licenta.supp_rel.contracts.Contract;
 import com.licenta.supp_rel.contracts.ContractService;
 import com.licenta.supp_rel.deliveries.Delivery;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -39,6 +41,8 @@ public class RatingService {
     RatingRepository ratingRepository;
     @Autowired
     DeviationRepository deviationRepository;
+    @Autowired
+    ChartsService chartsService;
 
     List<Rating> createRatings(String supplierId, String materialCode, String plantId) {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -243,18 +247,122 @@ public class RatingService {
         }
     }
 
-    public List<Rating> findRatingsBySupplierMaterialCodePlantId(Supplier supplier, String materialCode, String plantId){
-        if(materialCode == null){
-            if(plantId == null)
+    public List<Rating> findRatingsBySupplierMaterialCodePlantId(Supplier supplier, String materialCode, String plantId) {
+        if (materialCode == null) {
+            if (plantId == null)
                 return ratingRepository.findBySupplier(supplier);
             else
                 return ratingRepository.findBySupplierAndPlantId(supplier, plantId);
-        }
-        else{
-            if(plantId == null)
+        } else {
+            if (plantId == null)
                 return ratingRepository.findBySupplierAndMaterialCode(supplier, materialCode);
             else
                 return ratingRepository.findBySupplierAndMaterialCodeAndPlantId(supplier, materialCode, plantId);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T findRatingsBySupplierMaterialPlant(String supplierId, String materialCode, String plantId, String ratingType, String chart) {
+        List<Rating> ratings;
+        switch (ratingType) {
+            case "global" -> ratings = findGlobalRatings(supplierId);
+            case "material" -> ratings = findMaterialRatings(supplierId, materialCode);
+            case "plant" -> ratings = findPlantRatings(supplierId, plantId);
+            case "specific" -> ratings = findSpecificRatings(supplierId, materialCode, plantId);
+            default -> ratings = null;
+        }
+        if (ratings == null)
+            return null;
+        switch (chart) {
+            case "curveCorrectPerc" -> {
+                return (T) chartsService.getCurveRatingsAndCorrectDeliveriesPercentage(ratings);
+            }
+            case "totalNrDeliveries" -> {
+                return (T) chartsService.getTotalNumberOfDeliveries(ratings);
+            }
+            case "priceDeviation" -> {
+                return (T) chartsService.getPriceDeviations(ratings);
+            }
+            case "distanceToPlant" -> {
+                return (T) chartsService.getDistanceToPlant(ratings);
+            }
+            case "averageHours" -> {
+                return (T) chartsService.getAllAverageHours(ratings);
+            }
+            case "table" -> {
+                return (T) ratings;
+            }
+            default -> {
+                return null;
+            }
+        }
+    }
+
+    private List<Rating> findSpecificRatings(String supplierIdInput, String materialCodeInput, String plantIdInput) {
+        List<Rating> allRatings = ratingRepository.findAll();
+        List<Rating> matchingRatings = new ArrayList<>();
+
+        List<String> plantIds = Arrays.asList(plantIdInput.split(","));
+        List<String> supplierIds = Arrays.asList(supplierIdInput.split(","));
+        List<String> materialCodes = Arrays.asList(materialCodeInput.split(","));
+
+        for (Rating rating : allRatings) {
+            if ((plantIds.contains(rating.getPlantId()) || plantIds.contains("*")) &&
+                    (supplierIds.contains(rating.getSupplier().getId()) || supplierIds.contains("*")) &&
+                    (materialCodes.contains(rating.getMaterialCode()) || materialCodes.contains("*")) &&
+                    (!rating.getMaterialCode().equals("all") && !rating.getPlantId().equals("all"))) {
+                matchingRatings.add(rating);
+            }
+        }
+        return matchingRatings;
+    }
+
+    private List<Rating> findPlantRatings(String supplierIdInput, String plantIdInput) {
+        List<Rating> allRatings = ratingRepository.findAll();
+        List<Rating> matchingRatings = new ArrayList<>();
+
+        List<String> plantIds = Arrays.asList(plantIdInput.split(","));
+        List<String> supplierIds = Arrays.asList(supplierIdInput.split(","));
+
+        for (Rating rating : allRatings) {
+            if ((plantIds.contains(rating.getPlantId()) || plantIds.contains("*")) &&
+                    (supplierIds.contains(rating.getSupplier().getId()) || supplierIds.contains("*")) &&
+                    (rating.getMaterialCode().equals("all") && !rating.getPlantId().equals("all"))) {
+                matchingRatings.add(rating);
+            }
+        }
+        return matchingRatings;
+    }
+
+    private List<Rating> findMaterialRatings(String supplierIdInput, String materialCodeInput) {
+        List<Rating> allRatings = ratingRepository.findAll();
+        List<Rating> matchingRatings = new ArrayList<>();
+
+        List<String> supplierIds = Arrays.asList(supplierIdInput.split(","));
+        List<String> materialCodes = Arrays.asList(materialCodeInput.split(","));
+
+        for (Rating rating : allRatings) {
+            if ((supplierIds.contains(rating.getSupplier().getId()) || supplierIds.contains("*")) &&
+                    (materialCodes.contains(rating.getMaterialCode()) || materialCodes.contains("*")) &&
+                    (!rating.getMaterialCode().equals("all") && rating.getPlantId().equals("all"))) {
+                matchingRatings.add(rating);
+            }
+        }
+        return matchingRatings;
+    }
+
+    private List<Rating> findGlobalRatings(String supplierIdInput) {
+        List<Rating> allRatings = ratingRepository.findAll();
+        List<Rating> matchingRatings = new ArrayList<>();
+
+        List<String> supplierIds = Arrays.asList(supplierIdInput.split(","));
+
+        for (Rating rating : allRatings) {
+            if ((supplierIds.contains(rating.getSupplier().getId()) || supplierIds.contains("*")) &&
+                    rating.getMaterialCode().equals("all") && rating.getPlantId().equals("all")) {
+                matchingRatings.add(rating);
+            }
+        }
+        return matchingRatings;
     }
 }

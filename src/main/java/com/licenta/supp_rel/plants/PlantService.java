@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -43,6 +44,7 @@ public class PlantService {
         }
         List<Plant> commonPlants = new ArrayList<>(plantsByCityCountry);
         commonPlants.retainAll(plantsBySegment);
+        commonPlants.sort(Comparator.comparing(Plant::getId));
         return commonPlants;
     }
 }

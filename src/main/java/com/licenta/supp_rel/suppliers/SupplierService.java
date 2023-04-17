@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -30,6 +31,7 @@ public class SupplierService {
                 matchingSuppliers.add(supplier);
             }
         }
+        matchingSuppliers.sort(Comparator.comparing(Supplier::getId));
         return matchingSuppliers;
     }
 
@@ -52,5 +54,11 @@ public class SupplierService {
             supplierTooltipDTO.setAverageLeadTimeInHours(rating.getAverageLeadTimeInHours());
         }
         return supplierTooltipDTO;
+    }
+
+    public List<String> findAllSupplierIds(){
+        List<String> supplierIds = new ArrayList<>();
+        supplierRepository.findAll().forEach(supplier -> supplierIds.add(supplier.getId()));
+        return supplierIds;
     }
 }

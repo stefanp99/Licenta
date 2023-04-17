@@ -50,6 +50,8 @@ public class SecurityConfiguration {
                 .permitAll()
                 .requestMatchers("/system-configurations/**")
                 .permitAll()
+                .requestMatchers("/ratings/**")
+                .permitAll()
                 .anyRequest()
                 .authenticated()
                 .and()
