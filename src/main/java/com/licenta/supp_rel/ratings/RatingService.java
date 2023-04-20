@@ -289,6 +289,9 @@ public class RatingService {
             case "averageHours" -> {
                 return (T) chartsService.getAllAverageHours(ratings);
             }
+            case "totalNrDeliveriesPieChart" -> {
+                return (T) chartsService.getTotalNrOfDeliveriesPieChart(ratings);
+            }
             case "table" -> {
                 return (T) ratings;
             }

@@ -4,6 +4,7 @@ import com.licenta.supp_rel.ratings.Rating;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -54,4 +55,11 @@ public class ChartsService {
         return groupedVerticalBarChartDTOs;
     }
 
+    public Object getTotalNrOfDeliveriesPieChart(List<Rating> ratings) {
+        List<VerticalBarChartDTO> pieCharts = new ArrayList<>();
+        for(Rating rating: ratings)
+            pieCharts.add(new VerticalBarChartDTO(rating.getSupplier().getId(), Float.valueOf(rating.getTotalNumberDeliveries())));
+        pieCharts.sort(Comparator.comparing(VerticalBarChartDTO::getValue).reversed());
+        return pieCharts;
+    }
 }

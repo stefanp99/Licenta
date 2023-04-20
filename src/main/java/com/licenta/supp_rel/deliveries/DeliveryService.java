@@ -105,4 +105,17 @@ public class DeliveryService {
         }
         return matchingDeliveries;
     }
+
+    public List<String> findAllMaterials(){
+        List<Delivery> allDeliveries = deliveryRepository.findAll();
+        List<String> allMaterials = new ArrayList<>();
+        for(Delivery delivery: allDeliveries)
+            if(!allMaterials.contains(delivery.getContract().getMaterialCode()))
+                allMaterials.add(delivery.getContract().getMaterialCode());
+        return allMaterials;
+    }
+
+    public List<DeliverySummaryDTO> findDeliveriesBySupplierMaterialPlant(List<String> supplierIds, List<String> materialCodes, List<String> plantIds){
+        return deliveryRepository.findDeliveriesBySupplierMaterialPlant(supplierIds, materialCodes, plantIds);
+    }
 }

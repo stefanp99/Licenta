@@ -1,5 +1,6 @@
 package com.licenta.supp_rel.ratings;
 
+import com.licenta.supp_rel.statistics.StatisticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,6 +11,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RatingController {
     private final RatingService ratingService;
+    private final StatisticsService statisticsService;
     @PostMapping("calculateRatings")
     public List<Rating> calculateRatings(@RequestParam(value = "supplierId", required = false) String supplierId,
                                          @RequestParam(value = "materialCode", required = false) String materialCode,
@@ -31,6 +33,9 @@ public class RatingController {
             supplierId = "*";
         if (materialCode == null || materialCode.equals("") || materialCode.equals("null") || materialCode.equals("All"))
             materialCode = "*";
+        if(chart.equals("quantityBySupplierMaterialPlant") || chart.equals("totalQuantityBySupplierMaterialPlant")
+                || chart.equals("totalQuantityNoDays"))
+            return statisticsService.findStatisticsBySupplierMaterialPlant(supplierId, materialCode, plantId, ratingType, chart);
         return ratingService.findRatingsBySupplierMaterialPlant(supplierId, materialCode, plantId, ratingType, chart);
     }
 }

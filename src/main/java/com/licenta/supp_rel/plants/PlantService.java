@@ -47,4 +47,13 @@ public class PlantService {
         commonPlants.sort(Comparator.comparing(Plant::getId));
         return commonPlants;
     }
+
+    public List<String> findAllPlantIds() {
+        List<Plant> allPlants = plantRepository.findAll();
+        List<String> allPlantIds = new ArrayList<>();
+        for(Plant plant: allPlants)
+            if(!allPlantIds.contains(plant.getId()))
+                allPlantIds.add(plant.getId());
+        return allPlantIds;
+    }
 }
