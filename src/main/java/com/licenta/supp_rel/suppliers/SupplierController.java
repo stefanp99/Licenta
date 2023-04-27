@@ -32,13 +32,22 @@ public class SupplierController {
 
     @GetMapping("tooltips")
     public List<SupplierTooltipDTO> getSupplierTooltipDTO(@RequestParam(value = "supplierId", required = false) String supplierId) {
-        if (supplierId == null) {
-            List<SupplierTooltipDTO> supplierTooltipDTOs = new ArrayList<>();
+        List<SupplierTooltipDTO> supplierTooltipDTOs = new ArrayList<>();
+        if (supplierId == null || supplierId.equals("")) {
             List<Supplier> suppliers = supplierRepository.findAll();
-            for(Supplier supplier: suppliers)
-                supplierTooltipDTOs.add(supplierService.getSupplierTooltipDTO(supplier.getId()));
-            return supplierTooltipDTOs;
-        } else
-            return List.of(supplierService.getSupplierTooltipDTO(supplierId));
+            for(Supplier supplier: suppliers) {
+                SupplierTooltipDTO supplierTooltipDTO = supplierService.getSupplierTooltipDTO(supplier.getId());
+                if(supplierTooltipDTO != null)
+                    supplierTooltipDTOs.add(supplierTooltipDTO);
+            }
+        } else {
+            String[] supplierIds = supplierId.split(",");
+            for(String sId: supplierIds) {
+                SupplierTooltipDTO supplierTooltipDTO = supplierService.getSupplierTooltipDTO(sId);
+                if(supplierTooltipDTO != null)
+                    supplierTooltipDTOs.add(supplierTooltipDTO);
+            }
+        }
+        return supplierTooltipDTOs;
     }
 }

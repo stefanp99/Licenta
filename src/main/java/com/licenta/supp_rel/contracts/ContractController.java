@@ -75,4 +75,9 @@ public class ContractController {
             contractRepository.delete(contract);
         return contract;
     }
+
+    @GetMapping("allMaterialCodes")
+    public List<String> getAllMaterialCodes(){
+        return contractRepository.findAllMaterialCodes();
+    }
 }

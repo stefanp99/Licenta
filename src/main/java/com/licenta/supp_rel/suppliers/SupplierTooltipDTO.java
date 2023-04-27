@@ -19,4 +19,6 @@ public class SupplierTooltipDTO {
     private Float dayDeviationCurveRating;
     private Float averageNumberOfHoursToDeliver;
     private Float averageLeadTimeInHours;
+    private Float cityLatitude;
+    private Float cityLongitude;
 }

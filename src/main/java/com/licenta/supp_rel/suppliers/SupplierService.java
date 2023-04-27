@@ -43,6 +43,8 @@ public class SupplierService {
         supplierTooltipDTO.setId(supplier.getId());
         supplierTooltipDTO.setName(supplier.getName());
         supplierTooltipDTO.setCityCountry(supplier.getCityCountry());
+        supplierTooltipDTO.setCityLatitude(supplier.getCityLatitude());
+        supplierTooltipDTO.setCityLongitude(supplier.getCityLongitude());
         List<Rating> ratings = ratingService.findRatingsBySupplierMaterialCodePlantId(supplier, "all", "all");
         if(ratings != null && ratings.size() > 0){
             Rating rating = ratings.get(0);
