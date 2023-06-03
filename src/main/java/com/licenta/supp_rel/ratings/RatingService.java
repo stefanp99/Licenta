@@ -46,6 +46,7 @@ public class RatingService {
 
     List<Rating> createRatings(String supplierId, String materialCode, String plantId) {
         ObjectMapper objectMapper = new ObjectMapper();
+        //find configurations
         List<SystemConfiguration> systemConfigurations = systemConfigurationRepository.findAllByConfigGroupAndConfigName("ratings", "ratings_weightage");
         SystemConfiguration systemConfiguration = null;
         RatingsWeightageDTO ratingsWeightageDTO;
@@ -53,7 +54,9 @@ public class RatingService {
             systemConfiguration = systemConfigurations.get(0);
         if (systemConfiguration != null) {
             try {
+                //build WeightageDTO in order to use it later for weightages
                 ratingsWeightageDTO = objectMapper.readValue(systemConfiguration.getConfigValues(), RatingsWeightageDTO.class);
+                //get all needed suppliers
                 Supplier supplier = null;
                 if (supplierId != null)
                     supplier = supplierRepository.findById(supplierId).orElse(null);
@@ -66,6 +69,7 @@ public class RatingService {
                     suppliers = List.of(supplier);
 
                 for (Supplier supp : suppliers) {
+                    //for each supplier get its material codes from contracts
                     List<String> materialCodes = new ArrayList<>();
                     if (materialCode == null || materialCode.isEmpty()) {
                         materialCodes = contractService.findMaterialCodesBySupplier(supp);
@@ -74,6 +78,7 @@ public class RatingService {
                         materialCodes.add(materialCode);
 
                     for (String matCode : materialCodes) {
+                        //for each supplier and material code get their plants from contracts
                         List<String> plantIds = new ArrayList<>();
                         if (plantId == null || plantId.isEmpty()) {
                             List<Plant> plants = contractService.findPlantsBySupplierAndMaterialCode(supp, matCode);
@@ -84,12 +89,14 @@ public class RatingService {
                         } else
                             plantIds.add(plantId);
                         for (String pId : plantIds) {
+                            //call method for getting the ratings by supplier, material, plant and weightages
                             Rating rating = getRatingBySupplierAndMaterial(supp, matCode, pId, ratingsWeightageDTO);
                             if (rating != null && !ratings.contains(rating))
                                 ratings.add(rating);
                         }
                     }
                 }
+                //call method for calculating the curve ratings
                 curveRating(ratings);
                 ratingRepository.saveAll(ratings);
                 return ratings;
@@ -101,30 +108,32 @@ public class RatingService {
     }
 
     private Rating getRatingBySupplierAndMaterial(Supplier supplier, String materialCode, String plantId, RatingsWeightageDTO ratingsWeightageDTO) {
-        float medPercQtyMinus = 0F;
-        float medPercQtyPlus = 0F;
+        float medPercQtyMinus = 0F;//medium percentage of qty minus deviations
+        float medPercQtyPlus = 0F;//medium percentage of qty plus deviations
 
-        float medDaysDayMinus = 0F;
-        float medDaysDayPlus = 0F;
+        float medDaysDayMinus = 0F;//medium days of day minus deviations
+        float medDaysDayPlus = 0F;//medium days of day plus deviations
 
-        int qtyMinusDeviNumber = 0;
-        int qtyPlusDeviNumber = 0;
-        int dayMinusDeviNumber = 0;
-        int dayPlusDeviNumber = 0;
+        int qtyMinusDeviNumber = 0;//nr of qty minus deviations
+        int qtyPlusDeviNumber = 0;//nr of qty plus deviations
+        int dayMinusDeviNumber = 0;//nr of day minus deviations
+        int dayPlusDeviNumber = 0;//nr of day plus deviations
 
-        int correctDeliveriesNr = 0;
+        int correctDeliveriesNr = 0;//nr of correct deliveries(no deviations for that delivery)
 
         List<Delivery> deliveries = deliveryService.findAllBySupplierAndMaterialCodeAndPlantIdAndStatus(supplier, materialCode, plantId, "delivered");
-        int totalDeliveriesNumber = deliveries.size();
+        int totalDeliveriesNumber = deliveries.size();//total nr of deliveries
 
-        if (totalDeliveriesNumber < ratingsWeightageDTO.getMinDeliveries())
+        if (totalDeliveriesNumber < ratingsWeightageDTO.getMinDeliveries())//must be higher than minDeliveries
             return null;
 
         float totalTimeDifferenceInHours = 0F;
         float totalLeadTimeInHours = 0F;
         for (Delivery delivery : deliveries) {
+            //time it takes for the deliveries to be delivered
             float timeDifferenceInHours = Math.abs((delivery.getDeliveryDate().getTime() - delivery.getDispatchDate().getTime()) / (float) (60 * 60 * 1000));
             totalTimeDifferenceInHours += timeDifferenceInHours;
+            //time it takes for the deliveries to be dispatched(aka lead time)
             float leadTimeInHours = Math.abs((delivery.getDispatchDate().getTime() - delivery.getAddDeliveryDate().getTime()) / (float) (60 * 60 * 1000));
             totalLeadTimeInHours += leadTimeInHours;
             List<Deviation> foundDeviations = deviationRepository.findByDelivery(delivery);
@@ -157,16 +166,20 @@ public class RatingService {
         if (dayPlusDeviNumber != 0)
             medDaysDayPlus /= dayPlusDeviNumber;
 
+        //getting the rating by taking in consideration the percentage of qty deviations
         float ratingPercentageQty = ratingsWeightageDTO.getMedPercQtyMinusWeight() * medPercQtyMinus +
                 ratingsWeightageDTO.getMedPercQtyPlusWeight() * medPercQtyPlus;//lower is better(0-inf)
+        //getting the rating by taking in consideration the number of qty deviations
         float ratingNrDeviationsQty = 1 - (ratingsWeightageDTO.getQtyMinusDeviNumberWeight() * qtyMinusDeviNumber / totalDeliveriesNumber +
                 ratingsWeightageDTO.getQtyPlusDeviNumberWeight() * qtyPlusDeviNumber / totalDeliveriesNumber);//higher is better (1-0)
 
+        //same as above but for day deviations
         float ratingPercentageDay = ratingsWeightageDTO.getMedDaysDayMinusWeight() * medDaysDayMinus +
                 ratingsWeightageDTO.getMedDaysDayPlusWeight() * medDaysDayPlus;//lower is better(0-inf)
         float ratingNrDeviationsDay = 1 - (ratingsWeightageDTO.getDayMinusDeviNumberWeight() * dayMinusDeviNumber / totalDeliveriesNumber +
                 ratingsWeightageDTO.getDayPlusDeviNumberWeight() * dayPlusDeviNumber / totalDeliveriesNumber);//higher is better (1-0)
 
+        //creating a new rating
         Rating rating = new Rating();
         rating.setQtyPercentageRating(ratingPercentageQty);
         rating.setQtyNrDevisRating(ratingNrDeviationsQty);
@@ -180,33 +193,34 @@ public class RatingService {
         List<Contract> contracts;
         if (materialCode == null || materialCode.equals("")) {
             rating.setMaterialCode("all");
-            if (plantId == null)
+            if (plantId == null)//plant rating
                 rating.setPlantId("all");
             else {
                 rating.setDistanceToPlant(contractService.calculateDistanceBySupplierAndPlant(supplier,
-                        Objects.requireNonNull(plantRepository.findById(plantId).orElse(null))));
+                        Objects.requireNonNull(plantRepository.findById(plantId).orElse(null))));//distance from the supplier to the plant
                 rating.setPlantId(plantId);
             }
         } else {
             Float averagePrice;
             rating.setMaterialCode(materialCode);
             if (plantId == null) {
-                averagePrice = contractService.getAveragePriceByMaterialCode(materialCode);
+                averagePrice = contractService.getAveragePriceByMaterialCode(materialCode);//average price from all suppliers for a specific material
                 contracts = contractService.findContractsBySupplierAndMaterialCode(supplier, materialCode);
                 rating.setPlantId("all");
                 //rating.setDistanceToPlant(contractService.averageDistanceBySupplierAndMaterialsAndPlants(rating.getSupplier(), List.of(rating.getMaterialCode()), plants));
             } else {
                 averagePrice = contractService.getAveragePriceByMaterialCodeAndPlant(materialCode,
-                        plantRepository.findById(plantId).orElse(null));
+                        plantRepository.findById(plantId).orElse(null));//average price from all suppliers for a specific material and plant
                 contracts = contractService.findContractsBySupplierAndMaterialCodeAndPlant(supplier, materialCode,
                         plantRepository.findById(plantId).orElse(null));
                 rating.setDistanceToPlant(contractService.calculateDistanceBySupplierAndPlant(supplier,
-                        Objects.requireNonNull(plantRepository.findById(plantId).orElse(null))));
+                        Objects.requireNonNull(plantRepository.findById(plantId).orElse(null))));//distance from supplier to plant
                 rating.setPlantId(plantId);
             }
             Contract contract;
             if (contracts.size() > 0) {
                 contract = contracts.get(0);
+                //percentage of difference between this supplier's price per unit and average supplier's price per unit
                 rating.setPriceDeviationPercentage((contract.getPricePerUnit() - averagePrice) * 100 / averagePrice);
             }
         }
@@ -214,9 +228,14 @@ public class RatingService {
         return rating;
     }
 
+    /**
+     * method to curve rate all ratings by qty and day percentage deviations
+     * @param ratings ratings to be taken in consideration
+     */
     private void curveRating(List<Rating> ratings) {
         List<String> allMaterials = new ArrayList<>();
         List<String> allPlants = new ArrayList<>();
+        // all materials and all plants, no duplicates. should have used a set.
         for (Rating rating : ratings) {
             if (!allMaterials.contains(rating.getMaterialCode()))
                 allMaterials.add(rating.getMaterialCode());
@@ -224,6 +243,7 @@ public class RatingService {
                 allPlants.add(rating.getPlantId());
         }
 
+        //getting the maximum percentage of deviations by qty and day
         for (String material : allMaterials) {
             for (String plantId : allPlants) {
                 Float maxQty = Float.MIN_VALUE;
@@ -239,6 +259,7 @@ public class RatingService {
 
                 for (Rating rating : ratings) {
                     if (rating.getMaterialCode().equals(material) && rating.getPlantId().equals(plantId)) {
+                        //formula: curveRating = 1-rating/maxRating
                         rating.setQtyDeviationCurveRating(1 - (rating.getQtyPercentageRating() / maxQty));
                         rating.setDayDeviationCurveRating(1 - (rating.getDayPercentageRating() / maxDay));
                     }

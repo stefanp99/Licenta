@@ -6,9 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class DeviationService {
@@ -125,5 +128,27 @@ public class DeviationService {
             }
         }
         return matchingDeviations;
+    }
+
+    public List<Deviation> findDeviationsByCreationDate(Date creationDate){
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        List<Deviation> deviations = deviationRepository.findAll();
+        List<Deviation> returnedDeviations = new ArrayList<>();
+        for(Deviation deviation: deviations)
+            if(sdf.format(new Date(deviation.getCreationDate().getTime())).equals(sdf.format(creationDate)))
+                returnedDeviations.add(deviation);
+        return returnedDeviations;
+    }
+
+    public List<Deviation> findDeviationsByTypeSupplierMaterialPlantCreationDate(String typeInput, String plantIdInput,
+                                                                                String supplierIdInput, String materialCodeInput,
+                                                                                Date creationDate){
+        List<Deviation> deviationsByTypeSupplierMaterialPlant =
+                findDeviationsByTypeSupplierMaterialPlant(typeInput, plantIdInput, supplierIdInput, materialCodeInput);
+        List<Deviation> deviationByCreationDate = findDeviationsByCreationDate(creationDate);
+
+        return deviationsByTypeSupplierMaterialPlant.stream()
+                .distinct()
+                .filter(deviationByCreationDate::contains).collect(Collectors.toList());
     }
 }

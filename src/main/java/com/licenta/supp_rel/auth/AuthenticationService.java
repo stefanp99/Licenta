@@ -68,7 +68,7 @@ public class AuthenticationService {
     public AuthenticationResponse newPassword(NewPasswordRequest request) {
         PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByToken(request.getResetPasswordToken()).orElse(null);
         User user = new User();
-        if(passwordResetToken != null)
+        if(passwordResetToken != null)//TODO: extinde check-ul pentru tot restul codului de aici
             user = passwordResetToken.getUser();
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         usrRepository.save(user);
