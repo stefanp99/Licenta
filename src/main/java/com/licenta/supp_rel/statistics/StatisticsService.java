@@ -9,6 +9,8 @@ import com.licenta.supp_rel.suppliers.SupplierService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -25,7 +27,8 @@ public class StatisticsService {
     PlantService plantService;
 
     @SuppressWarnings("unchecked")
-    public <T> T findStatisticsBySupplierMaterialPlant(String supplierId, String materialCode, String plantId, String ratingType, String chart) {
+    public <T> T findStatisticsBySupplierMaterialPlant(String supplierId, String materialCode, String plantId,
+                                                       String ratingType, String chart, Date startDate, Date endDate) {
         List<DeliverySummaryDTO> deliverySummaryDTOs;
         List<String> supplierIds;
         List<String> materialCodes;
@@ -46,12 +49,18 @@ public class StatisticsService {
         }
         if (deliverySummaryDTOs == null)
             return null;
+
         List<String> allDeliveryDays = new ArrayList<>();
 
         Map<String, GroupedVerticalBarChartDTO> groupedVerticalBarChartDTOMap = new HashMap<>();
 
         switch (chart) {
             case "quantityBySupplierMaterialPlant" -> {
+                try {
+                    deliverySummaryDTOs = checkDeliverySummaryDTOsUsingRange(deliverySummaryDTOs, startDate, endDate);
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
                 for (DeliverySummaryDTO deliverySummaryDTO : deliverySummaryDTOs) {
                     String suppId = deliverySummaryDTO.getSupplierId();
                     String deliveryDay = deliverySummaryDTO.getDeliveryDay();
@@ -91,6 +100,11 @@ public class StatisticsService {
                 return (T) lineCharts;
             }
             case "totalQuantityBySupplierMaterialPlant" -> {
+                try {
+                    deliverySummaryDTOs = checkDeliverySummaryDTOsUsingRange(deliverySummaryDTOs, startDate, endDate);
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
                 deliverySummaryDTOs.sort(Comparator.comparing(DeliverySummaryDTO::getSupplierId).thenComparing(DeliverySummaryDTO::getDeliveryDay));
                 for (DeliverySummaryDTO deliverySummaryDTO : deliverySummaryDTOs) {
                     String suppId = deliverySummaryDTO.getSupplierId();
@@ -158,6 +172,30 @@ public class StatisticsService {
             }
         }
         return null;
+    }
+
+    private List<DeliverySummaryDTO> checkDeliverySummaryDTOsUsingRange(List<DeliverySummaryDTO> deliverySummaryDTOs, Date startDate, Date endDate) throws ParseException {
+        List<DeliverySummaryDTO> returnedList = new ArrayList<>();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        for (DeliverySummaryDTO deliverySummaryDTO : deliverySummaryDTOs) {
+            Date deliveryDate = sdf.parse(deliverySummaryDTO.getDeliveryDay());
+            if (startDate != null) {
+                if (endDate != null) {
+                    if (!startDate.after(deliveryDate) && !endDate.before(deliveryDate))
+                        returnedList.add(deliverySummaryDTO);
+                } else {
+                    if (!startDate.after(deliveryDate))
+                        returnedList.add(deliverySummaryDTO);
+                }
+            } else {
+                if (endDate != null) {
+                    if (!endDate.before(deliveryDate))
+                        returnedList.add(deliverySummaryDTO);
+                } else
+                    returnedList.add(deliverySummaryDTO);
+            }
+        }
+        return returnedList;
     }
 
     private List<DeliverySummaryDTO> findSpecificDeliverySummaries(List<String> supplierIds, List<String> materialCodes, List<String> plantIds) {
@@ -230,10 +268,10 @@ public class StatisticsService {
         return deliverySummaryDTOs;
     }
 
-    private List<String> completeListOfDates(List<String> allDeliveryDays){
+    private List<String> completeListOfDates(List<String> allDeliveryDays) {
         Collections.sort(allDeliveryDays);
         LocalDate startDate = LocalDate.parse(allDeliveryDays.get(0));
-        LocalDate endDate = LocalDate.parse(allDeliveryDays.get(allDeliveryDays.size()-1));
+        LocalDate endDate = LocalDate.parse(allDeliveryDays.get(allDeliveryDays.size() - 1));
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         long length = DAYS.between(startDate, endDate);
         String[] allDates = new String[(int) length];
