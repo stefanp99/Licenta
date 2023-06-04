@@ -1,6 +1,7 @@
 package com.licenta.supp_rel.auth;
 
 import com.licenta.supp_rel.email.EmailService;
+import com.licenta.supp_rel.reportChoices.ReportChoiceService;
 import com.licenta.supp_rel.security.JwtService;
 import com.licenta.supp_rel.token.*;
 import com.licenta.supp_rel.user.Role;
@@ -30,6 +31,7 @@ public class AuthenticationService {
     private final TokenRepository tokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailService emailService;
+    private final ReportChoiceService reportChoiceService;
 
     public AuthenticationResponse register(RegisterRequest request) {
         var user = User.builder()
@@ -43,6 +45,8 @@ public class AuthenticationService {
         var savedUser = usrRepository.save(user);
         var jwtToken = jwtService.generateToken(user);
         saveUserToken(savedUser, jwtToken);
+
+        reportChoiceService.addReportChoice(savedUser.getUserId(), "*", "*", "*");
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();

@@ -24,7 +24,7 @@ public class UserService {
         User user = tokenObj.map(Token::getUser).orElse(null);
         LoggedUserDto loggedUserDto = new LoggedUserDto();
         if (user != null)
-            loggedUserDto = new LoggedUserDto(user.getFirstName(), user.getLastName(), user.getUsername(), user.getEmailAddress());
+            loggedUserDto = new LoggedUserDto(user.getUserId(), user.getFirstName(), user.getLastName(), user.getUsername(), user.getEmailAddress());
         return loggedUserDto;
     }
 }
