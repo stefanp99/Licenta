@@ -98,6 +98,7 @@ public class RatingService {
                 }
                 //call method for calculating the curve ratings
                 curveRating(ratings);
+                ratingRepository.deleteAll();
                 ratingRepository.saveAll(ratings);
                 return ratings;
             } catch (JsonProcessingException e) {
