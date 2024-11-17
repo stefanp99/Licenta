@@ -18,8 +18,6 @@ public class DeviationServiceTest {
         Delivery delivery = new Delivery();
         delivery.setExpectedQuantity(100L);
         Contract contract = new Contract();
-        contract.setPlantId("1");
-        contract.setSupplierId("1");
         contract.setMaterialCode("MATERIAL_1");
         delivery.setContract(contract);
 
